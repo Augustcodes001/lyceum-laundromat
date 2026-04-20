@@ -1,27 +1,76 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { updatePassword } from 'firebase/auth';
 
 export default function Account() {
     const navigate = useNavigate();
-    const [name, setName] = useState('John Doe'); // Mock user
-    const [email, setEmail] = useState(() => localStorage.getItem('antigravity_email') || '');
-    const [phone, setPhone] = useState(() => localStorage.getItem('antigravity_phone') || '');
-    const [address, setAddress] = useState(() => localStorage.getItem('antigravity_default_address') || '');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
     const [currentPass, setCurrentPass] = useState('');
     const [newPass, setNewPass] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleUpdateDetails = () => {
-        localStorage.setItem('antigravity_email', email);
-        localStorage.setItem('antigravity_phone', phone);
-        localStorage.setItem('antigravity_default_address', address);
-        alert('Account details updated successfully.');
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!auth.currentUser) return;
+            try {
+                const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    setName(data.name || '');
+                    setEmail(data.email || '');
+                    setPhone(data.phone || '');
+                    setAddress(data.address || '');
+                }
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (auth.currentUser) {
+            fetchUserData();
+        } else {
+            // Auth listener catch
+            const unsubscribe = auth.onAuthStateChanged(user => {
+                if (user) fetchUserData();
+                else navigate('/');
+            });
+            return () => unsubscribe();
+        }
+    }, [navigate]);
+
+    const handleUpdateDetails = async () => {
+        if (!auth.currentUser) return;
+        try {
+            await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                name,
+                email,
+                phone,
+                address
+            });
+            alert('Account details updated successfully.');
+        } catch (error) {
+            alert('Update failed: ' + error.message);
+        }
     };
 
-    const handleUpdatePassword = () => {
-        if (!currentPass || !newPass) return;
-        alert('Password updated securely.');
-        setCurrentPass('');
-        setNewPass('');
+    const handleUpdatePassword = async () => {
+        if (!auth.currentUser || !newPass) return;
+        try {
+            // Re-auth is typically needed here for security, but we do a simple attempt
+            await updatePassword(auth.currentUser, newPass);
+            alert('Password updated securely.');
+            setCurrentPass('');
+            setNewPass('');
+        } catch (error) {
+            alert('Password update failed: ' + error.message);
+        }
     };
 
     return (

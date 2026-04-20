@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -14,17 +17,43 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault(); // 🛑 Stops the entire form from refreshing the page!
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg('');
 
-    // DUMMY AUTH: In the future, this is where you send data to Firebase/Backend
-    console.log("Authenticating:", { email, password });
+    try {
+      if (isLoginView) {
+        // Log in
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        // Sign Up & Create Profile
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-    // Simulate successful login/signup, tell the app we are logged in, and close modal
-    onLoginSuccess();
-    onClose();
+        // Auto-create profile in users collection
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          name: name,
+          email: email,
+          address: "",
+          phone: "",
+          state: "Edo State"
+        });
+      }
+
+      onLoginSuccess();
+      onClose();
+    } catch (error) {
+      setErrorMsg(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,6 +90,11 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
 
           {/* 🛑 WE ADDED onSubmit={handleSubmit} HERE */}
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {errorMsg && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold shadow-inner border border-red-100">
+                {errorMsg}
+              </div>
+            )}
 
             {!isLoginView && (
               <div>
@@ -100,9 +134,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             {/* Just a normal type="submit" button now! */}
             <button
               type="submit"
-              className="w-full mt-2 bg-[#0F3024] text-white py-4 rounded-xl font-bold text-[16px] shadow-lg hover:bg-[#1a4a38] transition-colors"
+              disabled={isLoading}
+              className="w-full mt-2 bg-[#0F3024] text-white py-4 rounded-xl font-bold text-[16px] shadow-lg hover:bg-[#1a4a38] transition-colors disabled:opacity-70"
             >
-              {isLoginView ? 'Log In' : 'Create Account'}
+              {isLoading ? 'Processing...' : (isLoginView ? 'Log In' : 'Create Account')}
             </button>
           </form>
 

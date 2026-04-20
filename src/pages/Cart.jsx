@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { auth, db } from '../firebase';
+import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const markerSvg = `<svg class="w-10 h-10 text-[#E85D04] drop-shadow-[0_4px_10px_rgba(232,93,4,0.5)]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" /></svg>`;
 const customIcon = new L.divIcon({
@@ -83,6 +85,23 @@ export default function Cart() {
     const [paymentMethod, setPaymentMethod] = useState(() => localStorage.getItem('antigravity_paymentMethod') || '');
     const [isProcessing, setIsProcessing] = useState(false);
     const [showPaystackModal, setShowPaystackModal] = useState(false);
+
+    // ── Fetch Profile ──
+    useEffect(() => {
+        const fetchAddress = async () => {
+            if (auth.currentUser && !address) {
+                try {
+                    const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+                    if (userDoc.exists() && userDoc.data().address) {
+                        setAddress(userDoc.data().address);
+                    }
+                } catch (e) {
+                    console.error("Could not fetch profile address", e);
+                }
+            }
+        };
+        fetchAddress();
+    }, []);
 
     // ── Local Storage Observers ──
     useEffect(() => {
@@ -190,12 +209,38 @@ export default function Cart() {
         }
     };
 
-    const handleFinalProcessing = () => {
+    const handleFinalProcessing = async () => {
         setIsProcessing(true);
         setShowPaystackModal(false);
-        setTimeout(() => {
-            navigate('/order-success', { state: { total, cartItems, address, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
-        }, 2000);
+
+        try {
+            if (!auth.currentUser) throw new Error("Please log in to place an order.");
+            
+            const docRef = await addDoc(collection(db, "orders"), {
+                userId: auth.currentUser.uid,
+                items: cartItems,
+                status: "Order Placed",
+                address: address,
+                pickup: { date: pickupDate, time: pickupTime },
+                delivery: { date: deliveryDate, time: deliveryTime },
+                paymentMethod,
+                total: total,
+                createdAt: serverTimestamp()
+            });
+
+            // Clean up strictly after successful network write
+            setCartItems([]);
+            localStorage.removeItem('antigravity_cartItems');
+            localStorage.removeItem('antigravity_pricing_quantities');
+            localStorage.removeItem('antigravity_pricing_services');
+
+            // Route to success utilizing document ID
+            navigate('/order-success', { state: { orderId: docRef.id, total, cartItems, address, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
+        } catch (error) {
+            console.error("Order failed:", error);
+            alert("Order submission failed: " + error.message);
+            setIsProcessing(false);
+        }
     };
 
     // ── Custom Date Selector Component ──

@@ -1,50 +1,83 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function OrderSuccess() {
     const location = useLocation();
     const navigate = useNavigate();
-    const orderData = location.state;
     const [orderId, setOrderId] = useState('');
+    const [orderSummary, setOrderSummary] = useState(null);
     const [linkCopied, setLinkCopied] = useState(false);
+    const [isValidating, setIsValidating] = useState(true);
+    const [userName, setUserName] = useState('');
 
     useEffect(() => {
-        if (!orderData) {
-            navigate('/cart');
-            return;
-        }
+        const validateOrder = async () => {
+            const stateOrderId = location.state?.orderId;
+            if (!stateOrderId) {
+                navigate('/cart');
+                return;
+            }
 
-        const existingOrders = JSON.parse(localStorage.getItem('antigravity_orders') || '[]');
-        
-        // Find if we already just processed this to prevent double-submit in React StrictMode
-        const recentIdMatch = existingOrders.find(o => JSON.stringify(o.cartItems) === JSON.stringify(orderData.cartItems) && o.placedAt.startsWith(new Date().toISOString().slice(0, 10)));
-        
-        let newId = '';
-        if (recentIdMatch) {
-            newId = recentIdMatch.id;
+            try {
+                const orderDoc = await getDoc(doc(db, "orders", stateOrderId));
+                if (orderDoc.exists()) {
+                    const data = orderDoc.data();
+                    // 🔐 Deep Link Validation: Ensure user owns this order
+                    if (data.userId === auth.currentUser?.uid) {
+                        setOrderId(stateOrderId);
+                        setOrderSummary(data);
+                    } else {
+                        navigate('/orders');
+                    }
+                } else {
+                    navigate('/cart');
+                }
+            } catch (error) {
+                console.error("Order validation failed:", error);
+                navigate('/cart');
+            } finally {
+                setIsValidating(false);
+            }
+        };
+
+        if (auth.currentUser) {
+            validateOrder();
         } else {
-            newId = `AG-${Math.floor(1000 + Math.random() * 9000)}`;
-            const newOrder = {
-                id: newId,
-                placedAt: new Date().toISOString(),
-                status: 'Order Placed',
-                ...orderData
-            };
-            localStorage.setItem('antigravity_orders', JSON.stringify([newOrder, ...existingOrders]));
-            
-            // Purge Cart Context
-            localStorage.removeItem('antigravity_cartItems');
-            localStorage.removeItem('antigravity_address');
-            localStorage.removeItem('antigravity_pickupDate');
-            localStorage.removeItem('antigravity_pickupTime');
-            localStorage.removeItem('antigravity_deliveryDate');
-            localStorage.removeItem('antigravity_deliveryTime');
+            const unsubscribe = auth.onAuthStateChanged(user => {
+                if (user) validateOrder();
+                else navigate('/');
+            });
+            return () => unsubscribe();
         }
+    }, [location.state, navigate]);
 
-        setOrderId(newId);
-    }, [orderData, navigate]);
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!auth.currentUser) return;
+            try {
+                const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+                if (userDoc.exists()) {
+                    setUserName(userDoc.data().name || 'Customer');
+                }
+            } catch (e) {
+                console.error("Failed to fetch user name", e);
+            }
+        };
 
-    if (!orderData || !orderId) return null;
+        if (orderId) fetchUserData();
+    }, [orderId]);
+
+    if (isValidating) {
+        return (
+            <div className="min-h-screen bg-[#0F3024] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-white/20 border-t-[#E85D04] rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (!orderId) return null;
 
     const shareLink = `${window.location.origin}/orders?id=${orderId}`;
 
@@ -54,11 +87,9 @@ export default function OrderSuccess() {
         setTimeout(() => setLinkCopied(false), 2000);
     };
 
-    const userName = "SAGE";
-
     return (
         <div className="min-h-screen bg-[#0F3024] pb-44 font-sans flex flex-col items-center justify-center p-6 text-center">
-            
+
             <div className="w-24 h-24 rounded-full bg-[#E85D04]/10 border-2 border-[#E85D04] flex items-center justify-center mb-8 animate-bounce shadow-[0_0_40px_rgba(232,93,4,0.3)]">
                 <svg className="w-12 h-12 text-[#E85D04]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -72,12 +103,12 @@ export default function OrderSuccess() {
             <div className="bg-white/5 backdrop-blur-md rounded-[32px] border border-white/10 p-6 w-full max-w-sm mb-6 text-left shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-[#E85D04]/10 rounded-full blur-xl"></div>
                 <h3 className="font-bold text-white mb-4 border-b border-white/10 pb-2">Order Reference</h3>
-                
+
                 <div className="flex items-center gap-3 bg-black/20 rounded-xl p-3 border border-white/5 mb-3">
                     <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
                     <p className="text-sm font-medium text-white/80 truncate w-full">{shareLink}</p>
                 </div>
-                
+
                 <button onClick={handleCopy} className={`w-full py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2 ${linkCopied ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                     {linkCopied ? (
                         <>

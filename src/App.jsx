@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "./firebase";
 
 // Pages
 import Home from './pages/Home';
@@ -21,10 +23,8 @@ import SupportWidget from './components/SupportWidget';
 import Sidebar from './components/Sidebar';
 
 function AppContent() {
-  // 1. Initialize state from localStorage so it survives a refresh!
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('isLoggedIn') === 'true';
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingRoute, setPendingRoute] = useState(null);
@@ -40,17 +40,20 @@ function AppContent() {
   const isHomePage = location.pathname === '/';
   const showSidebar = isLoggedIn && !isHomePage; // Only show sidebar if logged in AND NOT on home page
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      setIsAuthChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleLoginSuccess = () => {
     setIsAuthModalOpen(false);
-    setIsSplashLoading(true); // Trigger Splash Screen
+    setIsSplashLoading(true);
 
-    // Simulate app loading for 1.5 seconds, then show dashboard
     setTimeout(() => {
       setIsSplashLoading(false);
-      setIsLoggedIn(true);
-
-      // 2. Save to localStorage when they log in
-      localStorage.setItem('isLoggedIn', 'true');
 
       // If they tried to click a restricted link before logging in, send them there. Otherwise, Dashboard!
       if (pendingRoute) {
@@ -62,15 +65,23 @@ function AppContent() {
     }, 1500);
   };
 
-  const handleLogoutConfirm = () => {
-    setIsLoggedIn(false);
+  const handleLogoutConfirm = async () => {
     setIsLogoutModalOpen(false);
-
-    // 3. Remove from localStorage when they log out so it doesn't remember them!
-    localStorage.removeItem('isLoggedIn');
-
-    navigate('/'); // Send back to marketing homepage
+    try {
+      await signOut(auth);
+      navigate('/');
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
+
+  if (isAuthChecking) {
+    return (
+        <div className="min-h-screen bg-[#0F3024] flex items-center justify-center">
+            <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full animate-pulse" />
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

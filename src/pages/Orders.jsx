@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { auth, db } from '../firebase';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 
 const mockHistoryContent = [
     {
@@ -28,6 +30,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
     const [orders, setOrders] = useState([]);
     const [focusedOrderId, setFocusedOrderId] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [copySuccessId, setCopySuccessId] = useState(null);
 
     useEffect(() => {
         // Deep Link Auth Check
@@ -40,15 +43,45 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                 onOpenAuth();
             }
         }
-
-        const storedOrders = JSON.parse(localStorage.getItem('antigravity_orders') || '[]');
-        setOrders([...storedOrders, ...mockHistoryContent]);
     }, [location.search, isLoggedIn, onOpenAuth]);
+
+    useEffect(() => {
+        if (!auth.currentUser) {
+            setOrders([]);
+            return;
+        }
+
+        const q = query(
+            collection(db, "orders"),
+            where("userId", "==", auth.currentUser.uid),
+            orderBy("createdAt", "desc")
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedOrders = [];
+            snapshot.forEach((doc) => {
+                fetchedOrders.push({ id: doc.id, ...doc.data() });
+            });
+            setOrders(fetchedOrders);
+        }, (error) => {
+            console.error("Order snapshot error:", error);
+        });
+
+        return () => unsubscribe();
+    }, [auth.currentUser]);
 
     const activeOrders = orders.filter(o => o.status !== "Delivered");
     const historyOrders = orders.filter(o => o.status === "Delivered");
 
     const getStageIndex = (status) => Math.max(0, trackingStages.indexOf(status));
+
+    const handleCopyLink = (e, orderId) => {
+        e.stopPropagation();
+        const shareLink = `${window.location.origin}/orders?id=${orderId}`;
+        navigator.clipboard.writeText(shareLink);
+        setCopySuccessId(orderId);
+        setTimeout(() => setCopySuccessId(null), 2000);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-28 font-sans">
@@ -85,10 +118,21 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                             return (
                                 <div key={idx} onClick={() => setSelectedOrder(order)} className={`bg-white rounded-[32px] p-6 shadow-sm border cursor-pointer hover:shadow-md transition-all ${isFocused ? 'border-[#E85D04] ring-2 ring-[#E85D04]/20' : 'border-gray-100 hover:border-emerald-200'}`}>
                                     <div className="flex justify-between items-start mb-8 border-b border-gray-100 pb-4">
-                                        <div>
+                                        <div className="flex-1">
                                             <span className="text-xs font-bold text-[#E85D04] uppercase tracking-wide">Order {order.id}</span>
                                             <h3 className="font-extrabold text-[#0F3024] text-lg mt-1">{order.status}</h3>
                                         </div>
+                                        <button 
+                                            onClick={(e) => handleCopyLink(e, order.id)}
+                                            className={`p-2 rounded-xl transition-all ${copySuccessId === order.id ? 'bg-emerald-500 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                                            title="Copy Tracking Link"
+                                        >
+                                            {copySuccessId === order.id ? (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            ) : (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                            )}
+                                        </button>
                                     </div>
 
                                     {/* Detailed Illustration Progress */}
@@ -139,7 +183,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Exp. Delivery Date</p>
-                                            <p className="text-[#0F3024] font-bold text-sm">{order.deliveryDate} • {order.deliveryTime}</p>
+                                            <p className="text-[#0F3024] font-bold text-sm">{order.delivery?.date} • {order.delivery?.time}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -161,7 +205,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-[#0F3024] text-sm">Order {order.id}</h4>
-                                            <p className="text-xs text-gray-400 font-medium mt-0.5">{new Date(order.placedAt).toLocaleDateString()} • {order.cartItems?.map(c => c.service).join(', ')}</p>
+                                            <p className="text-xs text-gray-400 font-medium mt-0.5">{new Date(order.placedAt).toLocaleDateString()} • {order.items?.map(c => c.service).join(', ')}</p>
                                         </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
@@ -195,7 +239,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                             <div className="mb-6">
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Items</h4>
                                 <div className="space-y-3">
-                                    {selectedOrder.cartItems?.map((item, idx) => (
+                                    {selectedOrder.items?.map((item, idx) => (
                                         <div key={idx} className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                                             {item.image && (
                                                 <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 border border-gray-100 p-2">
@@ -219,17 +263,42 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-gray-500 font-medium">Pickup</span>
-                                        <span className="font-bold text-[#0F3024] text-right">{selectedOrder.pickupDate || 'N/A'}</span>
+                                        <span className="font-bold text-[#0F3024] text-right">{selectedOrder.pickup?.date || 'N/A'} • {selectedOrder.pickup?.time || 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-500 font-medium">Delivery</span>
-                                        <span className="font-bold text-[#0F3024] text-right">{selectedOrder.deliveryDate || 'N/A'}</span>
+                                        <span className="font-bold text-[#0F3024] text-right">{selectedOrder.delivery?.date || 'N/A'} • {selectedOrder.delivery?.time || 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t border-gray-100 mt-2">
                                         <span className="text-gray-500 font-medium">Address</span>
                                         <span className="font-bold text-[#0F3024] text-right truncate max-w-[150px]">{selectedOrder.address || 'N/A'}</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Share Tracking</h4>
+                                <button 
+                                    onClick={(e) => handleCopyLink(e, selectedOrder.id)}
+                                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${copySuccessId === selectedOrder.id ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-100 text-[#0F3024] hover:border-emerald-100 hover:bg-emerald-50/30'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${copySuccessId === selectedOrder.id ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
+                                            {copySuccessId === selectedOrder.id ? (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            ) : (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                                            )}
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-bold text-sm">{copySuccessId === selectedOrder.id ? 'Link Copied!' : 'Copy Tracking Link'}</p>
+                                            <p className="text-xs text-gray-500 opacity-80">Share this with anyone to track pickup</p>
+                                        </div>
+                                    </div>
+                                    {copySuccessId !== selectedOrder.id && (
+                                        <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 012 2h8a2 2 0 012-2v-2" /></svg>
+                                    )}
+                                </button>
                             </div>
 
                             <div className="flex justify-between items-center bg-[#0F3024] text-white p-5 rounded-2xl shadow-xl">
