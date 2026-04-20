@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { updatePassword } from 'firebase/auth';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { Star, ShieldCheck, AlertCircle, LogOut } from 'lucide-react';
 
 export default function Account() {
     const navigate = useNavigate();
@@ -13,6 +14,10 @@ export default function Account() {
     const [currentPass, setCurrentPass] = useState('');
     const [newPass, setNewPass] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    const isGoogleUser = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
+    const isProfileIncomplete = !phone || !address;
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -47,29 +52,43 @@ export default function Account() {
 
     const handleUpdateDetails = async () => {
         if (!auth.currentUser) return;
+        setIsUpdating(true);
         try {
             await updateDoc(doc(db, "users", auth.currentUser.uid), {
                 name,
-                email,
                 phone,
                 address
             });
             alert('Account details updated successfully.');
         } catch (error) {
             alert('Update failed: ' + error.message);
+        } finally {
+            setIsUpdating(false);
         }
     };
 
     const handleUpdatePassword = async () => {
-        if (!auth.currentUser || !newPass) return;
+        if (!auth.currentUser || !newPass || !currentPass) {
+            return alert("Please enter both current and new passwords.");
+        }
+        if (newPass.length < 6) return alert("New password must be at least 6 characters.");
+        
+        setIsUpdating(true);
         try {
-            // Re-auth is typically needed here for security, but we do a simple attempt
+            // Secure Re-authentication
+            const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
+            await reauthenticateWithCredential(auth.currentUser, credential);
+            
             await updatePassword(auth.currentUser, newPass);
             alert('Password updated securely.');
             setCurrentPass('');
             setNewPass('');
         } catch (error) {
-            alert('Password update failed: ' + error.message);
+            let msg = error.message;
+            if (error.code === 'auth/wrong-password') msg = "The current password you entered is incorrect.";
+            alert('Password update failed: ' + msg);
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -87,68 +106,92 @@ export default function Account() {
 
             <div className="max-w-2xl mx-auto px-4 mt-8 relative z-40 space-y-6">
                 
+                {/* ── Completion Prompt ── */}
+                {isProfileIncomplete && (
+                    <div className="bg-[#E85D04]/10 border border-[#E85D04]/20 p-5 rounded-[24px] flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="w-12 h-12 bg-[#E85D04] rounded-full flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-500/20">
+                            <AlertCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="font-black text-[#0F3024] text-sm">Finish Setting Up</h4>
+                            <p className="text-gray-500 text-xs font-bold leading-relaxed">Add your phone and address to enable laundry pickups.</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Profile Details Section ── */}
-                <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100">
-                    <h2 className="text-lg font-extrabold text-[#0F3024] mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-[#E85D04]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                        Personal details
-                    </h2>
-                    
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Full Name</label>
-                            <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Email Address</label>
-                            <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="john@example.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Phone Number <span className="text-gray-400 font-normal lowercase">(For logistics)</span></label>
-                            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="080..." type="tel" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Permanent Delivery Address</label>
-                            <input value={address} onChange={e => setAddress(e.target.value)} autoComplete="street-address" type="text" placeholder="House Number & Street" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">State</label>
-                            <div className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 flex items-center justify-between cursor-not-allowed">
-                                Benin City, Edo State
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-black text-[#0F3024] flex items-center gap-2 uppercase tracking-tight">
+                            <ShieldCheck className="w-5 h-5 text-[#E85D04]" />
+                            Profile Information
+                        </h2>
+                        {isGoogleUser && (
+                            <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Google Verified</span>
                             </div>
-                        </div>
-                        
-                        <button onClick={handleUpdateDetails} className="w-full mt-2 bg-[#0F3024] text-white py-3.5 rounded-[16px] font-bold shadow-[0_4px_15px_rgba(15,48,36,0.3)] hover:bg-[#0a2018] transition-colors">
-                            Update Account Details
-                        </button>
+                        )}
                     </div>
-                </div>
-
-                {/* ── Security Section ── */}
-                <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100">
-                    <h2 className="text-lg font-extrabold text-[#0F3024] mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-[#E85D04]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        Security
-                    </h2>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Current Password</label>
-                            <input value={currentPass} onChange={e => setCurrentPass(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Connected Email</label>
+                            <input value={email} disabled className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 text-sm font-bold text-gray-400 cursor-not-allowed" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">New Password</label>
-                            <input value={newPass} onChange={e => setNewPass(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-colors" />
+                            <label className="block text-[10px] font-black text-[#0F3024] uppercase tracking-widest mb-1.5">Full Name</label>
+                            <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-bold text-[#0F3024] focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-all shadow-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-[#0F3024] uppercase tracking-widest mb-1.5">Phone Number <span className="text-gray-400 font-bold lowercase tracking-normal">(Required)</span></label>
+                            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 08012345678" type="tel" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-bold text-[#0F3024] focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-all shadow-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-[#0F3024] uppercase tracking-widest mb-1.5">Delivery Address <span className="text-gray-400 font-bold lowercase tracking-normal">(Required)</span></label>
+                            <input value={address} onChange={e => setAddress(e.target.value)} autoComplete="street-address" type="text" placeholder="House No. & Street Name" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-bold text-[#0F3024] focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-all shadow-sm" />
                         </div>
                         
-                        <button onClick={handleUpdatePassword} className="w-full mt-2 bg-gray-100 text-[#0F3024] py-3.5 rounded-[16px] font-bold hover:bg-gray-200 transition-colors">
-                            Update Password
+                        <button 
+                            onClick={handleUpdateDetails} 
+                            disabled={isUpdating}
+                            className="w-full mt-4 bg-[#0F3024] text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-[#0F3024]/20 hover:bg-[#0a2018] transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                            {isUpdating ? 'Saving Changes...' : 'Save Profile Details'}
                         </button>
                     </div>
                 </div>
 
-                {/* ── NEW: Logout Section ── */}
+                {/* ── Security Section (Only for Email Users) ── */}
+                {!isGoogleUser && (
+                    <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-gray-100">
+                        <h2 className="text-lg font-black text-[#0F3024] mb-6 flex items-center gap-2 uppercase tracking-tight">
+                            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                            Security & Password
+                        </h2>
+                        
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-[10px] font-black text-[#0F3024] uppercase tracking-widest mb-1.5">Current Password</label>
+                                <input value={currentPass} onChange={e => setCurrentPass(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-bold focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-all" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-[#0F3024] uppercase tracking-widest mb-1.5">New Password</label>
+                                <input value={newPass} onChange={e => setNewPass(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-bold focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] outline-none transition-all" />
+                            </div>
+                            
+                            <button 
+                                onClick={handleUpdatePassword} 
+                                disabled={isUpdating}
+                                className="w-full mt-4 bg-gray-50 text-[#0F3024] py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-[0.98] border border-gray-200 disabled:opacity-50"
+                            >
+                                {isUpdating ? 'Securing...' : 'Update Password'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Logout Section ── */}
                 <div className="pt-4">
                     <button 
                         onClick={() => {
@@ -156,12 +199,10 @@ export default function Account() {
                                 auth.signOut().then(() => navigate('/'));
                             }
                         }}
-                        className="w-full bg-red-50 text-red-600 py-4 rounded-[24px] font-black tracking-wide border border-red-100 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-red-50 text-red-600 py-4 rounded-[24px] font-black uppercase tracking-widest border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-3 shadow-lg shadow-red-500/5 active:scale-[0.98]"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Log Out of Account
+                        <LogOut className="w-5 h-5" />
+                        Log Out Session
                     </button>
                 </div>
 

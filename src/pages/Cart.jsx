@@ -90,28 +90,35 @@ export default function Cart() {
 
     // ── NEW: Location & Details State ──
     const [savedAddress, setSavedAddress] = useState('');
+    const [savedPhone, setSavedPhone] = useState('');
     const [addrDescription, setAddrDescription] = useState(() => localStorage.getItem('antigravity_addrDescription') || '');
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [locationError, setLocationError] = useState('');
+    const [isProfileChecking, setIsProfileChecking] = useState(true);
 
     // ── Fetch Profile ──
     useEffect(() => {
-        const fetchAddress = async () => {
+        const fetchProfile = async () => {
             if (auth.currentUser) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
-                    if (userDoc.exists() && userDoc.data().address) {
-                        const profileAddr = userDoc.data().address;
-                        setSavedAddress(profileAddr);
-                        if (!address) setAddress(profileAddr);
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setSavedAddress(data.address || '');
+                        setSavedPhone(data.phone || '');
+                        if (!address && data.address) setAddress(data.address);
                     }
                 } catch (e) {
-                    console.error("Could not fetch profile address", e);
+                    console.error("Could not fetch profile", e);
+                } finally {
+                    setIsProfileChecking(false);
                 }
+            } else {
+                setIsProfileChecking(false);
             }
         };
-        fetchAddress();
-    }, []);
+        fetchProfile();
+    }, [address]);
 
     // ── NEW: Geolocation Handler ──
     const handleFetchCurrentLocation = () => {
@@ -279,18 +286,20 @@ export default function Cart() {
     const total = subtotal + (cartItems.length > 0 ? deliveryFee : 0);
 
     // Progress Logic
-    const steps = [!!address, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
+    const isProfileComplete = !!savedPhone && !!address;
+    const steps = [isProfileComplete, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
     const completedStepsCount = steps.filter(Boolean).length;
     const progressPercent = cartItems.length === 0 ? 0 : (completedStepsCount / 6) * 100;
-    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0;
+    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0 && isProfileComplete;
 
     // Smart Button Text
-    let buttonPrompt = "Enter Delivery Address";
-    if (address && !pickupDate) buttonPrompt = "Select Pickup Date";
-    else if (pickupDate && !pickupTime) buttonPrompt = "Select Pickup Time";
-    else if (pickupTime && !deliveryDate) buttonPrompt = "Confirm Delivery Date";
-    else if (deliveryDate && !deliveryTime) buttonPrompt = "Select Delivery Time";
-    else if (deliveryTime && !paymentMethod) buttonPrompt = "Select Payment Method";
+    let buttonPrompt = "Enter Delivery Details";
+    if (!savedPhone || !address) buttonPrompt = "Complete Profile in Account Settings";
+    else if (!pickupDate) buttonPrompt = "Select Pickup Date";
+    else if (!pickupTime) buttonPrompt = "Select Pickup Time";
+    else if (!deliveryDate) buttonPrompt = "Confirm Delivery Date";
+    else if (!deliveryTime) buttonPrompt = "Select Delivery Time";
+    else if (!paymentMethod) buttonPrompt = "Select Payment Method";
     else if (isReadyToCheckout) buttonPrompt = "Confirm Order";
 
     // ── Official Paystack Integration ──
@@ -314,6 +323,10 @@ export default function Cart() {
     };
 
     const handleCheckoutPrompt = () => {
+        if (!isProfileComplete) {
+            navigate('/account');
+            return;
+        }
         if (paymentMethod === 'Pay with Card') {
             setIsProcessing(true);
             initializePayment(onSuccess, onClosePaystack);
