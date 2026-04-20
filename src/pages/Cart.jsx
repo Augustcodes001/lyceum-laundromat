@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { usePaystackPayment } from 'react-paystack';
+import { MapPin, Home, Info, Loader2 } from 'lucide-react';
 
 const markerSvg = `<svg class="w-10 h-10 text-[#E85D04] drop-shadow-[0_4px_10px_rgba(232,93,4,0.5)]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" /></svg>`;
 const customIcon = new L.divIcon({
@@ -87,14 +88,22 @@ export default function Cart() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showPaystackModal, setShowPaystackModal] = useState(false);
 
+    // ── NEW: Location & Details State ──
+    const [savedAddress, setSavedAddress] = useState('');
+    const [addrDescription, setAddrDescription] = useState(() => localStorage.getItem('antigravity_addrDescription') || '');
+    const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+    const [locationError, setLocationError] = useState('');
+
     // ── Fetch Profile ──
     useEffect(() => {
         const fetchAddress = async () => {
-            if (auth.currentUser && !address) {
+            if (auth.currentUser) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
                     if (userDoc.exists() && userDoc.data().address) {
-                        setAddress(userDoc.data().address);
+                        const profileAddr = userDoc.data().address;
+                        setSavedAddress(profileAddr);
+                        if (!address) setAddress(profileAddr);
                     }
                 } catch (e) {
                     console.error("Could not fetch profile address", e);
@@ -103,6 +112,47 @@ export default function Cart() {
         };
         fetchAddress();
     }, []);
+
+    // ── NEW: Geolocation Handler ──
+    const handleFetchCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            setLocationError("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setIsLoadingLocation(true);
+        setLocationError('');
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                setMapPosition({ lat: latitude, lng: longitude });
+
+                try {
+                    // Use Nominatim (OpenStreetMap) for free reverse geocoding
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+                    const data = await res.json();
+                    
+                    if (data.display_name) {
+                        setAddress(data.display_name);
+                    } else {
+                        setAddress(`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                    }
+                } catch (err) {
+                    console.error("Geocoding error:", err);
+                    setAddress(`Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                } finally {
+                    setIsLoadingLocation(false);
+                }
+            },
+            (err) => {
+                console.error("Geolocation error:", err);
+                setLocationError("Permission denied or location unavailable");
+                setIsLoadingLocation(false);
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    };
 
     // ── Local Storage Observers ──
     useEffect(() => {
@@ -133,10 +183,14 @@ export default function Cart() {
         localStorage.setItem('antigravity_paymentMethod', paymentMethod);
     }, [paymentMethod]);
 
+    useEffect(() => {
+        localStorage.setItem('antigravity_addrDescription', addrDescription);
+    }, [addrDescription]);
+
     const [userModifiedDelivery, setUserModifiedDelivery] = useState(false);
     const deliveryFee = 1500;
 
-    // ── Smart 3-7 Day Delivery Logic ──
+    // ── Smart 4-7 Day Delivery Logic ──
     const deliveryRange = useMemo(() => {
         if (!pickupDate) return { min: '', max: '', quickDates: [] };
         
@@ -144,9 +198,9 @@ export default function Cart() {
         const pDate = new Date(y, m - 1, d);
         
         const minD = new Date(pDate);
-        minD.setDate(pDate.getDate() + 3);
+        minD.setDate(pDate.getDate() + 4); // CHANGED: Now 4 days minimum
         const maxD = new Date(pDate);
-        maxD.setDate(pDate.getDate() + 7);
+        maxD.setDate(pDate.getDate() + 8); // Adjusted max to keep window consistent
 
         const formatDate = (date) => {
             const yy = date.getFullYear();
@@ -160,7 +214,7 @@ export default function Cart() {
 
         // Generate filtered quick dates for delivery
         const dQuickDates = [];
-        for (let i = 3; i <= 5; i++) { // Show 3-5 days in quick scroll
+        for (let i = 4; i <= 6; i++) { // Show 4-6 days in quick scroll
             const date = new Date(pDate);
             date.setDate(pDate.getDate() + i);
             const id = formatDate(date);
@@ -280,6 +334,7 @@ export default function Cart() {
                 items: cartItems,
                 status: "Order Placed",
                 address: address,
+                description: addrDescription,
                 pickup: { date: pickupDate, time: pickupTime },
                 delivery: { date: deliveryDate, time: deliveryTime },
                 paymentMethod,
@@ -292,9 +347,10 @@ export default function Cart() {
             localStorage.removeItem('antigravity_cartItems');
             localStorage.removeItem('antigravity_pricing_quantities');
             localStorage.removeItem('antigravity_pricing_services');
+            localStorage.removeItem('antigravity_addrDescription');
 
             // Route to success utilizing document ID
-            navigate('/order-success', { state: { orderId: docRef.id, total, cartItems, address, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
+            navigate('/order-success', { state: { orderId: docRef.id, total, cartItems, address, description: addrDescription, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
         } catch (error) {
             console.error("Order failed:", error);
             alert("Order submission failed: " + error.message);
@@ -465,7 +521,28 @@ export default function Cart() {
                                     <h2 className="text-lg font-extrabold text-white tracking-wide">Location</h2>
                                 </div>
 
-                                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-3">
+                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                                    <button 
+                                        onClick={handleFetchCurrentLocation}
+                                        disabled={isLoadingLocation}
+                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 ${isLoadingLocation ? 'bg-white/5 text-white/40 border border-white/5' : 'bg-[#E85D04] text-white shadow-lg shadow-[#E85D04]/20 border border-[#E85D04]'}`}
+                                    >
+                                        {isLoadingLocation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
+                                        {isLoadingLocation ? 'Locating...' : 'Current Location'}
+                                    </button>
+                                    
+                                    {savedAddress && (
+                                        <button 
+                                            onClick={() => setAddress(savedAddress)}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 border ${address === savedAddress ? 'bg-white text-[#0F3024] border-white' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
+                                        >
+                                            <Home className="w-3.5 h-3.5" />
+                                            Preferred Area
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-3 mb-3">
                                     <div className="flex-1">
                                         <input
                                             type="text"
@@ -476,19 +553,33 @@ export default function Cart() {
                                         />
                                     </div>
                                     <div className="w-px h-6 bg-white/20 mx-1"></div>
-                                    {/* Auto-locked to Edo State */}
                                     <div className="text-white/60 font-bold text-sm shrink-0 select-none">
-                                        Edo State
+                                        Benin City
                                     </div>
                                 </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-start gap-3">
+                                    <Info className="w-4 h-4 text-[#E85D04] mt-0.5 shrink-0" />
+                                    <textarea
+                                        placeholder="Add description (e.g. Near blue gate, Apartment 4, Landmark...)"
+                                        value={addrDescription}
+                                        onChange={(e) => setAddrDescription(e.target.value)}
+                                        rows={2}
+                                        className="w-full bg-transparent text-white/80 placeholder-white/30 outline-none text-sm font-medium resize-none"
+                                    ></textarea>
+                                </div>
+
+                                {locationError && (
+                                    <p className="mt-2 text-red-400 text-[10px] font-bold px-1">{locationError}</p>
+                                )}
 
                                 {/* Map Trigger Button */}
                                 <button
                                     onClick={openMapModal}
-                                    className="mt-3 flex items-center gap-2 text-[#E85D04] text-sm font-bold hover:underline"
+                                    className="mt-3 flex items-center gap-2 text-white/40 text-[11px] font-bold hover:text-white transition-colors"
                                 >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-                                    Select on Map
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                    Refine on Map
                                 </button>
                             </div>
 

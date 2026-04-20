@@ -148,6 +148,23 @@ export default function Account() {
                     </div>
                 </div>
 
+                {/* ── NEW: Logout Section ── */}
+                <div className="pt-4">
+                    <button 
+                        onClick={() => {
+                            if (window.confirm("Are you sure you want to log out?")) {
+                                auth.signOut().then(() => navigate('/'));
+                            }
+                        }}
+                        className="w-full bg-red-50 text-red-600 py-4 rounded-[24px] font-black tracking-wide border border-red-100 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Log Out of Account
+                    </button>
+                </div>
+
             </div>
         </div>
     );

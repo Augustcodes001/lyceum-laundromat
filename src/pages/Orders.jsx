@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { Star } from 'lucide-react';
 
 const mockHistoryContent = [
     {
@@ -31,6 +32,14 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
     const [focusedOrderId, setFocusedOrderId] = useState(null);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [copySuccessId, setCopySuccessId] = useState(null);
+
+    // ── NEW: Review States ──
+    const [isReviewExpanded, setIsReviewExpanded] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [userProfile, setUserProfile] = useState(null);
+    const [reviewedOrders, setReviewedOrders] = useState(new Set());
 
     useEffect(() => {
         // Deep Link Auth Check
@@ -69,6 +78,29 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
 
         return () => unsubscribe();
     }, [auth.currentUser]);
+
+    // ── Fetch User Profile ──
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (auth.currentUser) {
+                const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+                if (userDoc.exists()) setUserProfile(userDoc.data());
+            }
+        };
+        fetchProfile();
+    }, [isLoggedIn]);
+
+    // ── Fetch Reviewed Orders ──
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const q = query(collection(db, "reviews"), where("userId", "==", auth.currentUser.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const ids = new Set();
+            snapshot.forEach(doc => ids.add(doc.data().orderId));
+            setReviewedOrders(ids);
+        });
+        return () => unsubscribe();
+    }, [isLoggedIn]);
 
     const activeOrders = orders.filter(o => o.status !== "Delivered");
     const historyOrders = orders.filter(o => o.status === "Delivered");
@@ -276,6 +308,12 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                         <span className="text-gray-500 font-medium">Address</span>
                                         <span className="font-bold text-[#0F3024] text-right truncate max-w-[150px]">{selectedOrder.address || 'N/A'}</span>
                                     </div>
+                                    {selectedOrder.description && (
+                                        <div className="flex justify-between pt-2">
+                                            <span className="text-gray-500 font-medium shrink-0">Note</span>
+                                            <span className="text-[#0F3024] font-medium text-right text-xs bg-gray-50 p-2 rounded-lg ml-4">{selectedOrder.description}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -303,6 +341,97 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                     )}
                                 </button>
                             </div>
+
+                            {/* ── NEW: REVIEW SECTION ── */}
+                            {selectedOrder.status === 'Delivered' && !reviewedOrders.has(selectedOrder.id) && (
+                                <div className="mb-6">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Share your experience</h4>
+                                    {!isReviewExpanded ? (
+                                        <button 
+                                            onClick={() => setIsReviewExpanded(true)}
+                                            className="w-full bg-white border border-[#E85D04]/20 p-4 rounded-2xl flex items-center justify-between hover:bg-orange-50/30 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-[#E85D04]">
+                                                    <Star className="w-5 h-5 fill-current" />
+                                                </div>
+                                                <span className="font-bold text-[#0F3024] text-sm">Rate Delivery Experience</span>
+                                            </div>
+                                            <svg className="w-5 h-5 text-gray-300 group-hover:text-[#E85D04] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                        </button>
+                                    ) : (
+                                        <div className="bg-white border border-gray-100 rounded-[24px] p-6 shadow-sm animate-in zoom-in-95 duration-200">
+                                            <p className="text-center font-bold text-[#0F3024] mb-4">How was everything?</p>
+                                            
+                                            <div className="flex justify-center gap-2 mb-6">
+                                                {[1, 2, 3, 4, 5].map((s) => (
+                                                    <button 
+                                                        key={s}
+                                                        onClick={() => setRating(s)}
+                                                        className="p-1 transition-transform active:scale-95"
+                                                    >
+                                                        <Star className={`w-8 h-8 ${s <= rating ? 'fill-[#E85D04] text-[#E85D04]' : 'text-gray-200'}`} />
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <textarea 
+                                                placeholder="Tell us what you liked about the service..."
+                                                value={comment}
+                                                onChange={(e) => setComment(e.target.value)}
+                                                className="w-full bg-gray-50 rounded-xl p-4 text-sm font-medium outline-none focus:ring-1 focus:ring-[#E85D04] border-none resize-none mb-4"
+                                                rows={3}
+                                            />
+
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => setIsReviewExpanded(false)}
+                                                    className="flex-1 py-3 text-gray-400 font-bold text-sm hover:text-gray-600 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button 
+                                                    onClick={async () => {
+                                                        if (rating === 0) return alert("Please select a rating.");
+                                                        setIsSubmitting(true);
+                                                        try {
+                                                            await addDoc(collection(db, "reviews"), {
+                                                                orderId: selectedOrder.id,
+                                                                userId: auth.currentUser.uid,
+                                                                userName: userProfile?.name || "Customer",
+                                                                rating,
+                                                                comment,
+                                                                createdAt: serverTimestamp()
+                                                            });
+                                                            setIsReviewExpanded(false);
+                                                            setRating(0);
+                                                            setComment('');
+                                                        } catch (err) {
+                                                            console.error("Review fail:", err);
+                                                            alert("Failed to submit review.");
+                                                        } finally {
+                                                            setIsSubmitting(false);
+                                                        }
+                                                    }}
+                                                    disabled={isSubmitting}
+                                                    className="flex-[2] bg-[#0F3024] text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#0F3024]/20 hover:bg-[#0a231a] transition-all disabled:opacity-50"
+                                                >
+                                                    {isSubmitting ? 'Submitting...' : 'Submit Review'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {reviewedOrders.has(selectedOrder.id) && (
+                                <div className="mb-6 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white shrink-0">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                    <span className="text-xs font-bold text-emerald-800">Feedback submitted! View it in Community.</span>
+                                </div>
+                            )}
 
                             <div className="flex justify-between items-center bg-[#0F3024] text-white p-5 rounded-2xl shadow-xl">
                                 <span className="font-medium text-white/80">Total Paid</span>

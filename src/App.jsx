@@ -14,6 +14,7 @@ import Track from './pages/Track';
 import UserPricing from './pages/UserPricing';
 import Cart from './pages/Cart';
 import OrderSuccess from './pages/OrderSuccess';
+import Reviews from './pages/Reviews';
 
 // Components
 import Header from './components/Header';
@@ -142,6 +143,7 @@ function AppContent() {
           <Route path="/user-pricing" element={<UserPricing />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/community" element={<Reviews />} />
         </Routes>
       </div>
 
