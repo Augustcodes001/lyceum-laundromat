@@ -136,8 +136,8 @@ export default function CustomerTestimonials() {
       <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-[#01411C] tracking-tight">
+        <div className="text-center mb-12 sm:mb-20">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#01411C] tracking-tight uppercase leading-[1.1]">
             Hear from customers like you:
           </h2>
         </div>
@@ -163,8 +163,8 @@ export default function CustomerTestimonials() {
                 style={{ width: `${100 / itemsPerView}%` }}
               >
                 <div 
-                  className="rounded-3xl p-8 flex flex-col h-full transform transition-transform duration-300 hover:-translate-y-1"
-                  style={{ backgroundColor: testimonial.bgColor }}
+                   className="rounded-[40px] p-6 sm:p-10 flex flex-col h-full transform transition-all duration-300 hover:-translate-y-1 shadow-sm sm:shadow-none"
+                   style={{ backgroundColor: testimonial.bgColor }}
                 >
                   <div className="h-32 flex items-center justify-center mb-6 bg-white/40 rounded-2xl">
                     {testimonial.icon}
@@ -194,15 +194,15 @@ export default function CustomerTestimonials() {
 
         {/* Clickable Pagination Dots */}
         {maxIndex > 0 && (
-          <div className="flex justify-center items-center gap-3 mt-12">
+          <div className="flex justify-center items-center gap-4 mt-12 sm:mt-16">
             {Array.from({ length: maxIndex + 1 }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`transition-all duration-300 rounded-full ${
                   currentIndex === index 
-                    ? 'w-8 h-3 bg-[#01411C]' 
-                    : 'w-3 h-3 bg-gray-300 hover:bg-gray-400'
+                    ? 'w-10 h-3 bg-[#01411C]' 
+                    : 'w-4 h-4 bg-gray-200 hover:bg-gray-400'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />

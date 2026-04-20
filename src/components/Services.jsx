@@ -44,8 +44,8 @@ export default function Services() {
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
 
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-lyceum-green tracking-tight">
+        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-20">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-lyceum-green tracking-tight uppercase leading-[1.1]">
             Our Core Services
           </h2>
         </div>
@@ -55,7 +55,7 @@ export default function Services() {
           {servicesData.map((service) => (
             <div
               key={service.id}
-              className="bg-white rounded-xl p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100"
+              className="bg-white rounded-[32px] p-6 sm:p-8 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100"
             >
               {service.icon}
               <h3 className="text-2xl font-bold text-lyceum-green mb-3 uppercase tracking-wide">
@@ -67,7 +67,7 @@ export default function Services() {
 
               <button
                 onClick={() => setActiveService(service)}
-                className="mt-auto bg-lyceum-orange hover:bg-orange-500 text-white font-bold text-sm tracking-widest uppercase py-3 px-6 rounded shadow transition-colors w-full"
+                className="mt-auto bg-lyceum-orange hover:bg-orange-500 text-white font-black text-xs tracking-[0.2em] uppercase py-4 sm:py-3 px-6 rounded-2xl shadow-xl shadow-orange-500/20 transition-all w-full active:scale-95 translate-y-0 hover:-translate-y-1"
               >
                 Read More
               </button>
@@ -86,7 +86,7 @@ export default function Services() {
           ></div>
 
           {/* Modal Container: Slide-up on Mobile, Centered on Desktop */}
-          <div className="relative z-[101] bg-white w-full max-w-lg mx-auto sm:h-fit mt-auto md:mt-auto md:my-auto md:rounded-2xl rounded-t-3xl p-6 sm:p-8 flex flex-col shadow-2xl animate-slide-up md:animate-zoom-in">
+          <div className="relative z-[101] bg-white w-full max-w-lg mx-auto sm:h-fit mt-auto md:mt-auto md:my-auto md:rounded-[40px] rounded-t-[40px] p-8 sm:p-10 flex flex-col shadow-2xl animate-slide-up md:animate-zoom-in border-t sm:border border-gray-100">
 
             {/* Close Button */}
             <button
@@ -116,7 +116,7 @@ export default function Services() {
             </div>
 
             {/* Action CTA */}
-            <button className="w-full bg-lyceum-orange hover:bg-orange-500 text-white font-bold text-sm tracking-widest uppercase py-4 rounded-xl shadow-md transition-colors mt-auto">
+            <button className="w-full bg-[#0F3024] text-white font-black text-xs tracking-[0.2em] uppercase py-5 rounded-2xl shadow-2xl shadow-[#0F3024]/30 transition-all mt-auto active:scale-95">
               Schedule This Service
             </button>
           </div>

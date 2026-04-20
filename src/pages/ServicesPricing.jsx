@@ -7,27 +7,28 @@ import Footer from '../components/Footer';
 const PickupPill = () => {
     const [address, setAddress] = useState('');
     return (
-        <div className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-gray-200">
-            <div className="flex flex-col px-6 py-3 border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Pickup</span>
-                <span className="text-[14px] text-gray-500 font-medium">Tonight</span>
+        <div className="flex flex-col sm:inline-flex sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-full overflow-hidden shadow-[0_6px_25px_rgba(0,0,0,0.12)] border border-gray-200 w-full sm:w-auto">
+            <div className="flex flex-col px-6 py-4 sm:py-3 border-b sm:border-b-0 sm:border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#0F3024]">Pickup</span>
+                <span className="text-[15px] text-gray-500 font-bold">Tonight</span>
             </div>
-            <label className="flex items-center px-6 py-3 min-w-[200px] cursor-text hover:bg-gray-50 transition-colors">
+            <label className="flex items-center px-6 py-4 sm:py-3 flex-1 min-w-0 sm:min-w-[200px] cursor-text hover:bg-gray-50 transition-colors">
                 <div className="flex flex-col w-full">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Where</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#0F3024]">Where</span>
                     <input
                         type="text"
                         placeholder="Add address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="text-[14px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-medium"
+                        className="text-[15px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-bold"
                     />
                 </div>
             </label>
-            <button className="m-1.5 w-11 h-11 rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <button className="m-2 h-12 sm:w-11 sm:h-11 rounded-xl sm:rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-all shadow-lg shadow-[#E85D04]/30">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
+                <span className="sm:hidden ml-2 font-black uppercase text-sm tracking-widest text-white">Continue</span>
             </button>
         </div>
     );
@@ -208,21 +209,23 @@ const services = [
 ];
 
 const ServiceToggle = ({ activeService, setActiveService }) => (
-    <div className="sticky top-[72px] z-30 bg-[#F6F8F7]/95 backdrop-blur-md py-4 border-b border-gray-200/50 flex justify-center">
-        <div className="inline-flex bg-white p-1 rounded-full shadow-sm border border-gray-200">
-            {services.map((service) => (
-                <button
-                    key={service.id}
-                    onClick={() => setActiveService(service.id)}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 ${activeService === service.id
-                            ? 'bg-[#fef3c7] text-[#0F3024] shadow-sm border border-yellow-600/20'
-                            : 'text-gray-500 hover:text-[#0F3024] hover:bg-gray-50'
-                        }`}
-                >
-                    <span className="uppercase">{service.name}</span>
-                    <span className="text-lg">{service.icon}</span>
-                </button>
-            ))}
+    <div className="sticky top-[72px] z-30 bg-[#F6F8F7]/95 backdrop-blur-md py-3 border-b border-gray-200/50">
+        <div className="max-w-7xl mx-auto px-4 overflow-x-auto scrollbar-hide flex sm:justify-center">
+            <div className="flex bg-white p-1 rounded-full shadow-sm border border-gray-200 shrink-0">
+                {services.map((service) => (
+                    <button
+                        key={service.id}
+                        onClick={() => setActiveService(service.id)}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black tracking-widest transition-all duration-300 shrink-0 ${activeService === service.id
+                                ? 'bg-[#fef3c7] text-[#0F3024] shadow-sm border border-yellow-600/20'
+                                : 'text-gray-400 hover:text-[#0F3024] hover:bg-gray-50'
+                            }`}
+                    >
+                        <span className="uppercase">{service.name}</span>
+                        <span className="text-base">{service.icon}</span>
+                    </button>
+                ))}
+            </div>
         </div>
     </div>
 );
@@ -247,12 +250,12 @@ export default function ServicesPricing() {
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex flex-col justify-center">
                     <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
-                        <div>
-                            <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] tracking-tight max-w-2xl uppercase">
+                        <div className="text-center lg:text-left">
+                            <h1 className="text-[2.6rem] sm:text-5xl md:text-7xl font-extrabold text-white leading-[1.05] sm:leading-[1.1] tracking-tight max-w-3xl uppercase">
                                 We'll take the laundry.<br />
                                 <span className="text-[#E85D04]">You take the time.</span>
                             </h1>
-                            <div className="mt-12">
+                            <div className="mt-10 sm:mt-12 flex justify-center lg:justify-start">
                                 <PickupPill />
                             </div>
                         </div>
@@ -301,10 +304,10 @@ export default function ServicesPricing() {
                                 Lyceum will pick up your laundry, clean it according to best practices and your preferences, and deliver it back neatly folded—right to your door.
                             </p>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
                                 {activeService.howItWorks.map((step, idx) => (
-                                    <div key={idx} className="flex flex-col">
-                                        <div className="flex items-center mb-6">
+                                    <div key={idx} className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                                        <div className="flex items-center mb-6 w-full">
                                             <div className="w-14 h-14 rounded-2xl border-2 border-[#0F3024] flex items-center justify-center flex-shrink-0 bg-white">
                                                 <svg className="w-6 h-6 text-[#0F3024]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                     {step.icon}
@@ -316,8 +319,8 @@ export default function ServicesPricing() {
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className="text-xl font-bold text-[#0F3024] mb-3 pr-4">{step.title}</h3>
-                                        <p className="text-gray-500 leading-relaxed">{step.desc}</p>
+                                        <h3 className="text-xl font-black text-[#0F3024] mb-3 sm:pr-4">{step.title}</h3>
+                                        <p className="text-gray-500 font-medium text-sm leading-relaxed">{step.desc}</p>
                                     </div>
                                 ))}
                             </div>
@@ -330,61 +333,67 @@ export default function ServicesPricing() {
 
                             {/* IF SERVICE HAS TIERED SUBSCRIPTION (Wash & Fold) */}
                             {activeService.pricing.payAsYouGo && (
-                                <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
-                                    <div className="lg:col-span-4 flex flex-col justify-center">
-                                        <h2 className="text-4xl md:text-5xl font-extrabold text-[#0F3024] leading-tight mb-6">
+                                <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-stretch">
+                                    <div className="lg:col-span-4 flex flex-col justify-center text-center lg:text-left">
+                                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0F3024] leading-[1.2] mb-6">
                                             Pricing That Fits Your Needs
                                         </h2>
-                                        <p className="text-lg text-gray-600 mb-8">
-                                            Two options, one goal: your convenience. Forget about laundry and <span className="text-[#0F3024] font-bold cursor-pointer underline decoration-2 underline-offset-4">save up to 60% with Rinse Repeat</span>, or try Lyceum with Pay-As-You-Go.
+                                        <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-md mx-auto lg:mx-0">
+                                            Two options, one goal: your convenience. Forget about laundry and <span className="text-[#0F3024] font-bold cursor-pointer underline decoration-2 underline-offset-4">save up to 60%</span> with Rinse Repeat.
                                         </p>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
                                             <div className="flex -space-x-3">
                                                 {[1, 2, 3, 4].map(i => (
                                                     <img key={i} className="w-10 h-10 rounded-full border-2 border-white object-cover" src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="avatar" />
                                                 ))}
                                             </div>
                                             <div>
-                                                <div className="flex text-[#0F3024] text-lg">★★★★<span className="text-gray-300">★</span></div>
-                                                <div className="text-sm text-gray-500">from 6,000+ reviews</div>
+                                                <div className="flex text-[#0F3024] text-lg justify-center lg:justify-start">★★★★<span className="text-gray-300">★</span></div>
+                                                <div className="text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-wider">6,000+ happy reviews</div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="lg:col-span-4 bg-white rounded-[32px] p-8 md:p-10 shadow-sm border border-gray-200 flex flex-col">
-                                        <h3 className="text-3xl font-extrabold text-[#0F3024] mb-2">Pay-As-You-Go</h3>
-                                        <p className="text-gray-600 font-medium mb-8 pb-8 border-b border-gray-100">{activeService.pricing.payAsYouGo.subtitle}</p>
+                                    <div className="lg:col-span-4 bg-white rounded-[40px] p-6 sm:p-10 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col">
+                                        <h3 className="text-2xl sm:text-3xl font-black text-[#0F3024] mb-2 uppercase tracking-tighter">Pay-As-You-Go</h3>
+                                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-8 pb-8 border-b border-gray-100">{activeService.pricing.payAsYouGo.subtitle}</p>
                                         <div className="mb-8">
-                                            <span className="text-gray-400 text-sm font-bold uppercase tracking-wider block mb-1">{activeService.pricing.payAsYouGo.prefix}</span>
-                                            <span className="text-5xl font-bold text-[#0F3024]">{activeService.pricing.payAsYouGo.price}</span>
+                                            <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-1">{activeService.pricing.payAsYouGo.prefix}</span>
+                                            <span className="text-4xl sm:text-5xl font-black text-[#0F3024]">{activeService.pricing.payAsYouGo.price}</span>
                                         </div>
                                         <ul className="space-y-4 mb-10 flex-1">
                                             {activeService.pricing.payAsYouGo.features.map((feature, i) => (
-                                                <li key={i} className="text-gray-600 font-medium flex items-start gap-2">{feature}</li>
+                                                <li key={i} className="text-gray-600 font-bold text-sm sm:text-base flex items-start gap-2">
+                                                    <svg className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    {feature}
+                                                </li>
                                             ))}
                                         </ul>
-                                        <button className="w-full py-4 rounded-xl font-bold text-[#E85D04] border-2 border-[#E85D04] hover:bg-[#E85D04] hover:text-white transition-colors">
+                                        <button className="w-full py-4 sm:py-5 rounded-2xl font-black uppercase tracking-widest text-[#E85D04] border-2 border-[#E85D04] hover:bg-[#E85D04] hover:text-white transition-all shadow-lg shadow-orange-500/5">
                                             Schedule a pickup
                                         </button>
                                     </div>
 
-                                    <div className="lg:col-span-4 bg-[#0F3024] rounded-[32px] p-8 md:p-10 shadow-xl flex flex-col relative overflow-hidden">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-3xl font-extrabold text-white">Rinse Repeat</h3>
-                                            <span className="bg-[#fef3c7] text-[#0F3024] text-xs font-bold px-3 py-1 rounded-full">Most popular</span>
+                                    <div className="lg:col-span-4 bg-[#0F3024] rounded-[40px] p-6 sm:p-10 shadow-2xl flex flex-col relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4">
+                                            <span className="bg-[#E85D04] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Popular</span>
                                         </div>
-                                        <p className="text-gray-300 font-medium mb-8 pb-8 border-b border-white/10">{activeService.pricing.subscription.subtitle}</p>
+                                        <h3 className="text-2xl sm:text-3xl font-black text-white mb-2 uppercase tracking-tighter">Rinse Repeat</h3>
+                                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-8 pb-8 border-b border-white/10">{activeService.pricing.subscription.subtitle}</p>
                                         <div className="mb-8">
-                                            <span className="text-gray-400 text-sm font-bold uppercase tracking-wider block mb-1">{activeService.pricing.subscription.prefix}</span>
-                                            <span className="text-5xl font-bold text-white">{activeService.pricing.subscription.price}</span>
+                                            <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-1">{activeService.pricing.subscription.prefix}</span>
+                                            <span className="text-4xl sm:text-5xl font-black text-white">{activeService.pricing.subscription.price}</span>
                                         </div>
                                         <ul className="space-y-4 mb-10 flex-1">
                                             {activeService.pricing.subscription.features.map((feature, i) => (
-                                                <li key={i} className="text-white font-medium flex items-start gap-2">{feature}</li>
+                                                <li key={i} className="text-white/90 font-bold text-sm sm:text-base flex items-start gap-2">
+                                                    <svg className="w-5 h-5 text-[#E85D04] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    {feature}
+                                                </li>
                                             ))}
                                         </ul>
-                                        <button className="w-full py-4 rounded-xl font-bold text-white bg-[#E85D04] hover:bg-[#d65503] transition-colors">
-                                            Explore Rinse Repeat plans
+                                        <button className="w-full py-4 sm:py-5 rounded-2xl font-black uppercase tracking-widest text-white bg-[#E85D04] hover:bg-[#d65503] transition-all shadow-xl shadow-orange-600/30">
+                                            Explore Plans
                                         </button>
                                     </div>
                                 </div>

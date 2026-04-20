@@ -52,11 +52,11 @@ export default function HowItWorks() {
     return (
         <section className="py-16 bg-white overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#01411C] tracking-tight">
-                        Your Time Back in <span className="text-[#F6921E]">4 Simple Steps</span>
+                <div className="text-center mb-12 sm:mb-20">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#01411C] tracking-tight uppercase leading-[1.1]">
+                        Your Time Back in <span className="text-[#E85D04]">4 Simple Steps</span>
                     </h2>
-                    <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p className="mt-6 text-base sm:text-lg text-gray-500 font-medium max-w-2xl mx-auto px-4">
                         From tap to doorstep, we handle the heavy lifting so you can focus on what actually matters.
                     </p>
                 </div>
@@ -70,9 +70,9 @@ export default function HowItWorks() {
                         return (
                             <div
                                 key={step.id}
-                                className={`flex-initial transition-all duration-500 rounded-3xl p-6 relative flex flex-col ease-in-out border border-gray-100/50 shadow-sm
+                                className={`flex-initial transition-all duration-500 rounded-[32px] p-6 sm:p-8 relative flex flex-col ease-in-out border border-gray-100 shadow-sm
                   ${isExpanded ? 'flex-[0_0_100%] order-[-1] min-w-full' : 'flex-[1_1_0%] min-w-[280px]'}
-                  ${isAnyExpanded && !isExpanded ? 'scale-90 opacity-40' : 'scale-100 opacity-100'}
+                  ${isAnyExpanded && !isExpanded ? 'scale-95 opacity-50 blur-sm' : 'scale-100 opacity-100'}
                   md:${isExpanded ? 'flex-[0_0_100%]' : 'flex-[1_1_0%]'}
                 `}
                                 style={{ backgroundColor: step.themeColor }}
@@ -81,9 +81,9 @@ export default function HowItWorks() {
                                 {isExpanded && (
                                     <button
                                         onClick={() => setExpandedCardId(null)}
-                                        className="absolute top-4 right-4 text-gray-600 hover:text-black bg-white/50 rounded-full p-2 z-10 transition-colors"
+                                        className="absolute top-4 right-4 text-gray-500 hover:text-black bg-white/70 rounded-full h-11 w-11 flex items-center justify-center z-10 transition-all active:scale-90 shadow-sm"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                                     </button>
                                 )}
 
@@ -106,19 +106,19 @@ export default function HowItWorks() {
                                 {/* Typography Block */}
                                 <div className={`${isExpanded ? 'md:flex md:gap-8 md:items-start mt-4' : 'block mt-auto'}`}>
                                     <div className={`${isExpanded ? 'md:w-1/3' : 'w-full'}`}>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                                        <p className={`text-gray-700 mb-6 transition-all duration-300 ${isExpanded ? 'leading-relaxed' : 'line-clamp-2'}`}>
+                                        <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">{step.title}</h3>
+                                        <p className={`text-gray-500 font-bold mb-6 transition-all duration-300 text-sm sm:text-base ${isExpanded ? 'leading-relaxed' : 'line-clamp-2'}`}>
                                             {step.shortDesc}
                                         </p>
                                     </div>
 
                                     {/* Expanded Full Description (Only visible when expanded) */}
                                     {isExpanded && (
-                                        <div className="md:w-2/3 border-t md:border-t-0 md:border-l border-gray-900/10 pt-4 md:pt-0 md:pl-8">
-                                            <p className="text-gray-700 leading-relaxed mb-8">{step.fullDesc}</p>
+                                        <div className="md:w-2/3 border-t md:border-t-0 md:border-l border-gray-900/5 pt-6 md:pt-0 md:pl-10">
+                                            <p className="text-gray-600 font-medium leading-relaxed mb-8 text-sm sm:text-[1.05rem]">{step.fullDesc}</p>
                                             <button
                                                 onClick={() => setExpandedCardId(null)}
-                                                className="w-full md:w-auto bg-gray-900 text-white font-bold px-8 py-3 rounded-xl hover:bg-black transition-colors shadow-md"
+                                                className="w-full md:w-auto bg-gray-900 text-white font-black uppercase tracking-widest px-10 py-5 rounded-2xl hover:bg-black transition-all shadow-xl shadow-gray-900/20 active:scale-95"
                                             >
                                                 Close Details
                                             </button>
@@ -130,13 +130,13 @@ export default function HowItWorks() {
                                 {!isExpanded && (
                                     <button
                                         onClick={() => toggleExpand(step.id)}
-                                        className="absolute bottom-6 right-6 text-gray-900 bg-white/50 rounded-full hover:scale-110 transition-all p-2 shadow-sm"
+                                        className="absolute bottom-6 right-6 text-gray-900 bg-white shadow-lg rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all active:scale-90 border border-gray-100"
                                     >
                                         {step.chevron === 'right' && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                                         )}
                                         {step.chevron === 'up' && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
                                         )}
                                     </button>
                                 )}
