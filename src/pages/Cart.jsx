@@ -1,0 +1,594 @@
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const markerSvg = `<svg class="w-10 h-10 text-[#E85D04] drop-shadow-[0_4px_10px_rgba(232,93,4,0.5)]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" /></svg>`;
+const customIcon = new L.divIcon({
+    html: markerSvg,
+    className: 'bg-transparent',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40]
+});
+
+function LocationMarker({ position, setPosition, setTempAddress }) {
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+            setTempAddress(`Location near ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+        },
+    });
+
+    return position === null ? null : (
+        <Marker position={position} icon={customIcon}></Marker>
+    );
+}
+
+export default function Cart() {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // ── Persistence State Initialization ──
+    const [cartItems, setCartItems] = useState(() => {
+        if (location.state?.cartItems && location.state.cartItems.length > 0) {
+            return location.state.cartItems;
+        }
+        const saved = localStorage.getItem('antigravity_cartItems');
+        if (saved) return JSON.parse(saved);
+        return [];
+    });
+
+    // ── Date Generation Logic ──
+    const generateQuickDates = () => {
+        const dates = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 3; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() + i);
+
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const id = `${y}-${m}-${d}`;
+
+            dates.push({
+                raw: date,
+                id: id,
+                dayName: i === 0 ? 'Today' : i === 1 ? 'Tmw' : date.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateNum: date.getDate(),
+                month: date.toLocaleDateString('en-US', { month: 'short' })
+            });
+        }
+        return dates;
+    };
+
+    const quickDates = useMemo(() => generateQuickDates(), []);
+    const timeSlots = ["Morning", "Afternoon", "Evening (< 8pm)"];
+
+    // ── Forms & Scheduling State ──
+    const defaultAddress = localStorage.getItem('antigravity_default_address') || '';
+    const [address, setAddress] = useState(() => localStorage.getItem('antigravity_address') || defaultAddress);
+    const [tempAddress, setTempAddress] = useState('');
+    const [mapPosition, setMapPosition] = useState(null);
+    const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+
+    const [pickupDate, setPickupDate] = useState(() => localStorage.getItem('antigravity_pickupDate') || '');
+    const [pickupTime, setPickupTime] = useState(() => localStorage.getItem('antigravity_pickupTime') || '');
+    const [deliveryDate, setDeliveryDate] = useState(() => localStorage.getItem('antigravity_deliveryDate') || '');
+    const [deliveryTime, setDeliveryTime] = useState(() => localStorage.getItem('antigravity_deliveryTime') || '');
+
+    const [paymentMethod, setPaymentMethod] = useState(() => localStorage.getItem('antigravity_paymentMethod') || '');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [showPaystackModal, setShowPaystackModal] = useState(false);
+
+    // ── Local Storage Observers ──
+    useEffect(() => {
+        localStorage.setItem('antigravity_cartItems', JSON.stringify(cartItems));
+    }, [cartItems]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_address', address);
+    }, [address]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_pickupDate', pickupDate);
+    }, [pickupDate]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_pickupTime', pickupTime);
+    }, [pickupTime]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_deliveryDate', deliveryDate);
+    }, [deliveryDate]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_deliveryTime', deliveryTime);
+    }, [deliveryTime]);
+
+    useEffect(() => {
+        localStorage.setItem('antigravity_paymentMethod', paymentMethod);
+    }, [paymentMethod]);
+
+    const [userModifiedDelivery, setUserModifiedDelivery] = useState(false);
+    const deliveryFee = 1500;
+
+    // ── Smart 3-Day Delivery Automation ──
+    useEffect(() => {
+        if (pickupDate && !userModifiedDelivery) {
+            const [y, m, d] = pickupDate.split('-').map(Number);
+            const pDate = new Date(y, m - 1, d);
+
+            pDate.setDate(pDate.getDate() + 3); // Add exactly 3 days
+
+            const targetY = pDate.getFullYear();
+            const targetM = String(pDate.getMonth() + 1).padStart(2, '0');
+            const targetD = String(pDate.getDate()).padStart(2, '0');
+
+            setDeliveryDate(`${targetY}-${targetM}-${targetD}`);
+        }
+    }, [pickupDate, userModifiedDelivery]);
+
+    const handleDeliveryDateSelect = (id) => {
+        setDeliveryDate(id);
+        setUserModifiedDelivery(true);
+    };
+
+    // ── Handlers ──
+    const updateQuantity = (itemId, delta) => {
+        setCartItems(prev => prev.map(item => {
+            if (item.id === itemId) {
+                const newQty = Math.max(1, item.qty + delta);
+                return { ...item, qty: newQty };
+            }
+            return item;
+        }));
+    };
+
+    const removeItem = (itemId) => {
+        setCartItems(prev => prev.filter(item => item.id !== itemId));
+    };
+
+    // Map Simulation Handler
+    const handleConfirmMapLocation = () => {
+        if (tempAddress) setAddress(tempAddress);
+        setIsMapModalOpen(false);
+    };
+
+    const openMapModal = () => {
+        setTempAddress(address);
+        setIsMapModalOpen(true);
+    };
+
+    // ── Calculations & Smart Progress ──
+    const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+    const total = subtotal + (cartItems.length > 0 ? deliveryFee : 0);
+
+    // Progress Logic
+    const steps = [!!address, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
+    const completedStepsCount = steps.filter(Boolean).length;
+    const progressPercent = cartItems.length === 0 ? 0 : (completedStepsCount / 6) * 100;
+    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0;
+
+    // Smart Button Text
+    let buttonPrompt = "Enter Delivery Address";
+    if (address && !pickupDate) buttonPrompt = "Select Pickup Date";
+    else if (pickupDate && !pickupTime) buttonPrompt = "Select Pickup Time";
+    else if (pickupTime && !deliveryDate) buttonPrompt = "Confirm Delivery Date";
+    else if (deliveryDate && !deliveryTime) buttonPrompt = "Select Delivery Time";
+    else if (deliveryTime && !paymentMethod) buttonPrompt = "Select Payment Method";
+    else if (isReadyToCheckout) buttonPrompt = "Confirm Order";
+
+    const handleCheckoutPrompt = () => {
+        if (paymentMethod === 'Pay with Card') {
+            setShowPaystackModal(true);
+        } else {
+            handleFinalProcessing();
+        }
+    };
+
+    const handleFinalProcessing = () => {
+        setIsProcessing(true);
+        setShowPaystackModal(false);
+        setTimeout(() => {
+            navigate('/order-success', { state: { total, cartItems, address, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
+        }, 2000);
+    };
+
+    // ── Custom Date Selector Component ──
+    const DateSelector = ({ title, selected, onSelect }) => {
+        const isCustomSelected = selected && !quickDates.find(d => d.id === selected);
+
+        let customDisplay = null;
+        if (isCustomSelected) {
+            const [y, m, d] = selected.split('-').map(Number);
+            const cDate = new Date(y, m - 1, d);
+            customDisplay = {
+                dayName: cDate.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateNum: cDate.getDate(),
+                month: cDate.toLocaleDateString('en-US', { month: 'short' })
+            };
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        return (
+            <div className="mb-6">
+                <h3 className="font-bold text-white text-[14px] mb-3">{title}</h3>
+                <div className="flex overflow-x-auto gap-3 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {quickDates.map((item) => {
+                        const isSelected = selected === item.id;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => onSelect(item.id)}
+                                className={`flex flex-col items-center justify-center min-w-[70px] h-[85px] rounded-2xl transition-all duration-300 shrink-0 border ${isSelected ? 'bg-[#E85D04] border-[#E85D04] shadow-[0_4px_15px_rgba(232,93,4,0.4)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                            >
+                                <span className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${isSelected ? 'text-white/90' : 'text-white/40'}`}>{item.dayName}</span>
+                                <span className={`text-2xl font-extrabold ${isSelected ? 'text-white' : 'text-white/90'}`}>{item.dateNum}</span>
+                                <span className={`text-[10px] font-medium ${isSelected ? 'text-white/80' : 'text-white/50'}`}>{item.month}</span>
+                            </button>
+                        );
+                    })}
+
+                    {/* Native Calendar Trigger */}
+                    <div className="relative shrink-0 flex">
+                        <input
+                            type="date"
+                            min={todayStr}
+                            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                            onChange={(e) => {
+                                if (e.target.value) onSelect(e.target.value);
+                            }}
+                        />
+                        <div className={`flex flex-col items-center justify-center min-w-[70px] h-[85px] rounded-2xl transition-all duration-300 shrink-0 border ${isCustomSelected ? 'bg-[#E85D04] border-[#E85D04] shadow-[0_4px_15px_rgba(232,93,4,0.4)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                            {isCustomSelected ? (
+                                <>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider mb-1 text-white/90">{customDisplay.dayName}</span>
+                                    <span className="text-2xl font-extrabold text-white">{customDisplay.dateNum}</span>
+                                    <span className="text-[10px] font-medium text-white/80">{customDisplay.month}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-6 h-6 text-white/50 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">Other</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const TimeSelector = ({ title, selected, onSelect }) => (
+        <div className="mb-6">
+            <h3 className="font-bold text-white text-[14px] mb-3">{title}</h3>
+            <div className="grid grid-cols-3 gap-2">
+                {timeSlots.map((item, idx) => {
+                    const isSelected = selected === item;
+                    return (
+                        <button
+                            key={idx}
+                            onClick={() => onSelect(item)}
+                            className={`py-3 px-1 rounded-xl text-[11px] font-bold transition-all duration-300 border text-center leading-tight ${isSelected ? 'bg-[#E85D04] border-[#E85D04] text-white shadow-[0_4px_15px_rgba(232,93,4,0.4)]' : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'}`}
+                        >
+                            {item}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-44 font-sans relative">
+
+            {/* ── Top Header ── */}
+            <div className="bg-white px-4 pt-12 pb-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                <button onClick={() => navigate(-1)} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-[#0F3024] hover:bg-gray-100 transition-colors">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h1 className="text-lg font-extrabold text-[#0F3024]">Your Cart</h1>
+                <div className="w-10 h-10 flex items-center justify-center relative">
+                    <svg className="w-6 h-6 text-[#0F3024]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                    {cartItems.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#E85D04] rounded-full border-2 border-white"></span>}
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto pt-6">
+                {cartItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                        </div>
+                        <h2 className="text-xl font-bold text-[#0F3024] mb-2">Your cart is empty</h2>
+                        <p className="text-gray-500 mb-8">Looks like you haven't added any laundry items yet.</p>
+                        <Link to="/user-pricing" className="bg-[#0F3024] text-white px-8 py-4 rounded-xl font-bold shadow-lg">Start Adding Items</Link>
+                    </div>
+                ) : (
+                    <>
+                        {/* ── Cart Items List ── */}
+                        <div className="px-4 space-y-3 mb-8">
+                            {cartItems.map(item => (
+                                <div key={item.id} className="bg-white p-4 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-[#0F3024]/5 rounded-2xl flex items-center justify-center shrink-0 p-2 border border-gray-100">
+                                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-[#0F3024] text-[15px] truncate">{item.name}</h3>
+                                        <p className="text-[11px] font-bold tracking-wider text-gray-400 uppercase mt-0.5">{item.service}</p>
+                                        <p className="text-[#E85D04] font-bold text-sm mt-1">₦{item.price.toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2 shrink-0">
+                                        <button onClick={() => removeItem(item.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                        <div className="flex items-center bg-gray-50 rounded-full border border-gray-100">
+                                            <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#0F3024]">
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" /></svg>
+                                            </button>
+                                            <span className="w-6 text-center text-[#0F3024] font-bold text-sm">{item.qty}</span>
+                                            <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#0F3024]">
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <Link to="/user-pricing" className="block text-center text-sm font-bold text-[#E85D04] mt-4 hover:underline">
+                                + Add more items
+                            </Link>
+                        </div>
+
+                        {/* ── Logistics Block (Address & Scheduling) ── */}
+                        <div className="bg-[#0F3024] rounded-[32px] p-6 shadow-xl mb-8 mx-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full border-4 border-white/5 opacity-50"></div>
+
+                            {/* 📍 Address Section */}
+                            <div className="relative z-10 mb-8">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    </div>
+                                    <h2 className="text-lg font-extrabold text-white tracking-wide">Location</h2>
+                                </div>
+
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-3">
+                                    <div className="flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter your street address"
+                                            value={address}
+                                            onChange={(e) => setAddress(e.target.value)}
+                                            className="w-full bg-transparent text-white placeholder-white/40 outline-none text-sm font-medium"
+                                        />
+                                    </div>
+                                    <div className="w-px h-6 bg-white/20 mx-1"></div>
+                                    {/* Auto-locked to Edo State */}
+                                    <div className="text-white/60 font-bold text-sm shrink-0 select-none">
+                                        Edo State
+                                    </div>
+                                </div>
+
+                                {/* Map Trigger Button */}
+                                <button
+                                    onClick={openMapModal}
+                                    className="mt-3 flex items-center gap-2 text-[#E85D04] text-sm font-bold hover:underline"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                    Select on Map
+                                </button>
+                            </div>
+
+                            <div className="h-px bg-white/10 w-full my-6 relative z-10"></div>
+
+                            {/* 🕒 Pickup Section */}
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 rounded-full bg-[#E85D04]/20 text-[#E85D04] flex items-center justify-center">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                    <h2 className="text-lg font-extrabold text-white tracking-wide">Pickup Details</h2>
+                                </div>
+                                <DateSelector title="Day" selected={pickupDate} onSelect={setPickupDate} />
+                                <TimeSelector title="Time Window" selected={pickupTime} onSelect={setPickupTime} />
+                            </div>
+
+                            <div className="h-px bg-white/10 w-full my-6 relative z-10"></div>
+
+                            {/* 🚚 Delivery Section */}
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-extrabold text-white tracking-wide">Expected Delivery</h2>
+                                        <p className="text-[11px] text-white/50 font-medium">Standard 3-day turnaround</p>
+                                    </div>
+                                </div>
+                                <DateSelector title="Day" selected={deliveryDate} onSelect={handleDeliveryDateSelect} />
+                                <TimeSelector title="Time Window" selected={deliveryTime} onSelect={setDeliveryTime} />
+                            </div>
+                        </div>
+
+                        {/* ── Order Summary ── */}
+                        <div className="px-4 mb-8">
+                            <h2 className="text-lg font-extrabold text-[#0F3024] mb-4">Order Summary</h2>
+                            <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 space-y-3">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500 font-medium">Subtotal ({cartItems.length} items)</span>
+                                    <span className="font-bold text-[#0F3024]">₦{subtotal.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500 font-medium">Pickup & Delivery</span>
+                                    <span className="font-bold text-[#0F3024]">₦{deliveryFee.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Billing & Payment UI ── */}
+                        <div className="px-4 mb-8">
+                            <h2 className="text-lg font-extrabold text-[#0F3024] mb-4">Payment Method</h2>
+                            <div className="bg-white rounded-[24px] p-2 shadow-sm border border-gray-100 space-y-2">
+                                {['Pay with Card', 'Bank Transfer', 'Pay on Pickup'].map(method => (
+                                    <button
+                                        key={method}
+                                        onClick={() => setPaymentMethod(method)}
+                                        className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${paymentMethod === method ? 'border-[#E85D04] bg-[#E85D04]/5' : 'border-transparent hover:bg-gray-50'}`}
+                                    >
+                                        <span className={`font-bold ${paymentMethod === method ? 'text-[#E85D04]' : 'text-gray-600'}`}>{method}</span>
+                                        {paymentMethod === method && (
+                                            <div className="w-5 h-5 rounded-full bg-[#E85D04] flex items-center justify-center">
+                                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Paystack Trust Badge Placeholder */}
+                            {paymentMethod === 'Pay with Card' && (
+                                <div className="mt-4 flex items-center justify-center gap-2 bg-[#0BA4DB]/5 p-3 rounded-xl border border-[#0BA4DB]/20">
+                                    <svg className="w-4 h-4 text-[#0BA4DB]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
+                                    <span className="text-xs font-bold text-[#0BA4DB]">Securely processed by Paystack</span>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* ── Smart Progress Checkout Button ── */}
+            {cartItems.length > 0 && (
+                <div className="fixed bottom-[88px] left-4 right-4 z-40 lg:ml-64 pointer-events-none flex justify-center">
+                    <button
+                        disabled={!isReadyToCheckout || isProcessing}
+                        onClick={handleCheckoutPrompt}
+                        className={`pointer-events-auto relative w-full max-w-2xl rounded-2xl p-4 flex items-center justify-between shadow-2xl overflow-hidden transition-transform duration-300 ${isReadyToCheckout && !isProcessing ? 'scale-100 hover:scale-[1.02]' : 'scale-[0.98]'}`}
+                    >
+                        {/* Background Container (Dark Green) */}
+                        <div className="absolute inset-0 bg-[#0F3024]"></div>
+
+                        {/* Smart Filling Bar (Orange) */}
+                        <div
+                            className="absolute inset-y-0 left-0 bg-[#E85D04] transition-all duration-500 ease-out"
+                            style={{ width: `${progressPercent}%` }}
+                        ></div>
+
+                        {/* Button Content (Z-10 to stay above the filling bar) */}
+                        <div className="relative z-10 flex items-center justify-between w-full">
+                            <span className={`font-bold text-lg transition-colors duration-300 ${isReadyToCheckout ? 'text-white' : 'text-white/80'} ${isProcessing ? 'animate-pulse' : ''}`}>
+                                {isProcessing ? 'Processing Securely...' : buttonPrompt}
+                            </span>
+
+                            {isReadyToCheckout && (
+                                <div className="flex items-center gap-3 animate-fade-in">
+                                    <span className="text-white font-extrabold text-xl">₦{total.toLocaleString()}</span>
+                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </button>
+                </div>
+            )}
+
+            {/* ── MAP MODAL PLACEHOLDER ── */}
+            {isMapModalOpen && (
+                <div className="fixed inset-0 z-[100] flex flex-col bg-white">
+                    {/* Header */}
+                    <div className="px-4 py-4 flex items-center justify-between bg-white shadow-sm z-10">
+                        <h2 className="text-lg font-extrabold text-[#0F3024]">Pin Location</h2>
+                        <button onClick={() => setIsMapModalOpen(false)} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-[#0F3024]">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    {/* Real Leaflet Map */}
+                    <div className="flex-1 relative overflow-hidden bg-[#0F3024]">
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[400] bg-[#0F3024]/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-bold shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-white/10 text-center w-[250px] pointer-events-none">
+                            Tap anywhere on the map to place your pin
+                        </div>
+                        <MapContainer
+                            center={[6.3350, 5.6037]}
+                            zoom={13}
+                            style={{ height: '100%', width: '100%', filter: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)' }}
+                            zoomControl={false}
+                        >
+                            <TileLayer
+                                attribution='&copy; OpenStreetMap'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <LocationMarker position={mapPosition} setPosition={setMapPosition} setTempAddress={setTempAddress} />
+                        </MapContainer>
+                    </div>
+
+                    {/* Bottom Action Area */}
+                    <div className="p-6 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-10 rounded-t-[32px] relative -mt-4">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-[#E85D04]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-[#0F3024] truncate">{tempAddress || "Select a location"}</h3>
+                                <p className="text-sm text-gray-500">Benin City, Edo State</p>
+                            </div>
+                        </div>
+                        <button
+                            disabled={!mapPosition}
+                            onClick={handleConfirmMapLocation}
+                            className={`w-full py-4 rounded-xl font-bold shadow-lg transition-colors ${mapPosition ? 'bg-[#E85D04] text-white hover:bg-[#d15303]' : 'bg-gray-200 text-gray-400'}`}
+                        >
+                            Confirm Location
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Paystack Mock Modal */}
+            {showPaystackModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white max-w-sm w-full rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0BA4DB]/10 rounded-full blur-xl -mr-10 -mt-10"></div>
+                        <h3 className="text-2xl font-extrabold text-[#0F3024] mb-1">Pay ₦{total.toLocaleString()}</h3>
+                        <p className="text-xs font-bold text-[#0BA4DB] flex items-center gap-1 mb-8">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            Secure Paystack Gateway
+                        </p>
+                        
+                        <div className="space-y-5 relative z-10">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Card Number</label>
+                                <input type="text" placeholder="0000 0000 0000 0000" maxLength={19} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-1/2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Expiry</label>
+                                    <input type="text" placeholder="MM/YY" maxLength={5} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
+                                </div>
+                                <div className="w-1/2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">CVV</label>
+                                    <input type="password" placeholder="123" maxLength={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3 mt-8">
+                                <button onClick={() => setShowPaystackModal(false)} className="w-1/3 py-4 bg-gray-100 rounded-xl text-gray-800 font-bold hover:bg-gray-200 transition-colors">Cancel</button>
+                                <button onClick={handleFinalProcessing} className="w-2/3 py-4 bg-[#0BA4DB] rounded-xl text-white font-bold hover:bg-[#0993c4] shadow-lg shadow-[#0BA4DB]/30 transition-colors">Pay ₦{total.toLocaleString()}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+}

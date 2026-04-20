@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --color-lyceum-green: #01411C;
+  --color-lyceum-orange: #F6921E;
+  --color-lyceum-dark: #111827;
+  --color-lyceum-light: #f3f4f6;
+}
+
+/* src/index.css */
+
+/* src/index.css */
+
+/* ONLY apply app behaviors to touch-screen devices (phones/tablets), ignoring resized desktop windows */
+@media screen and (max-width: 768px) and (pointer: coarse) {
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  html,
+  body {
+    /* Stop the iOS bounce effect */
+    overscroll-behavior-y: none;
+    /* Prevent horizontal swiping, but let the browser handle vertical scrolling naturally */
+    overflow-x: hidden;
+  }
+
+  .app-element {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-zoom-in {
+    animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-lyceum-light text-lyceum-dark;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* @layer base {
+  body {
+    @apply text-lyceum-dark;
+    font-family: 'Inter', system-ui, sans-serif;
+
+    Premium Dot Matrix Background
+    background-color: #F6F8F7;
+    background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+} */
