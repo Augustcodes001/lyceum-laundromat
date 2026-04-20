@@ -92,6 +92,9 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                     </button>
                     <h1 className="text-xl font-extrabold text-white tracking-wide border-l border-white/20 pl-4 py-1">Your Tracking</h1>
                 </div>
+                <button onClick={() => navigate('/user-pricing')} className="absolute right-6 top-11 bg-[#E85D04] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-black/20 hover:bg-[#d15303] transition-all active:scale-95">
+                    + New Order
+                </button>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 mt-6">

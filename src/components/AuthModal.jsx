@@ -50,9 +50,32 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       onLoginSuccess();
       onClose();
     } catch (error) {
-      setErrorMsg(error.message);
+      setErrorMsg(getFriendlyErrorMessage(error.code));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getFriendlyErrorMessage = (code) => {
+    switch (code) {
+      case 'auth/invalid-email':
+        return "Please enter a valid email address.";
+      case 'auth/user-disabled':
+        return "This account has been disabled.";
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return "Invalid email or password.";
+      case 'auth/email-already-in-use':
+        return "This email is already registered. Try logging in.";
+      case 'auth/weak-password':
+        return "Password should be at least 6 characters.";
+      case 'auth/network-request-failed':
+        return "Network error. Please check your connection.";
+      case 'auth/popup-closed-by-user':
+        return "Login cancelled.";
+      default:
+        return "An error occurred. Please try again.";
     }
   };
 

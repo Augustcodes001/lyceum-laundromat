@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { usePaystackPayment } from 'react-paystack';
 
 const markerSvg = `<svg class="w-10 h-10 text-[#E85D04] drop-shadow-[0_4px_10px_rgba(232,93,4,0.5)]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" /></svg>`;
 const customIcon = new L.divIcon({
@@ -135,25 +136,62 @@ export default function Cart() {
     const [userModifiedDelivery, setUserModifiedDelivery] = useState(false);
     const deliveryFee = 1500;
 
-    // ── Smart 3-Day Delivery Automation ──
-    useEffect(() => {
-        if (pickupDate && !userModifiedDelivery) {
-            const [y, m, d] = pickupDate.split('-').map(Number);
-            const pDate = new Date(y, m - 1, d);
+    // ── Smart 3-7 Day Delivery Logic ──
+    const deliveryRange = useMemo(() => {
+        if (!pickupDate) return { min: '', max: '', quickDates: [] };
+        
+        const [y, m, d] = pickupDate.split('-').map(Number);
+        const pDate = new Date(y, m - 1, d);
+        
+        const minD = new Date(pDate);
+        minD.setDate(pDate.getDate() + 3);
+        const maxD = new Date(pDate);
+        maxD.setDate(pDate.getDate() + 7);
 
-            pDate.setDate(pDate.getDate() + 3); // Add exactly 3 days
+        const formatDate = (date) => {
+            const yy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
+        };
 
-            const targetY = pDate.getFullYear();
-            const targetM = String(pDate.getMonth() + 1).padStart(2, '0');
-            const targetD = String(pDate.getDate()).padStart(2, '0');
+        const minStr = formatDate(minD);
+        const maxStr = formatDate(maxD);
 
-            setDeliveryDate(`${targetY}-${targetM}-${targetD}`);
+        // Generate filtered quick dates for delivery
+        const dQuickDates = [];
+        for (let i = 3; i <= 5; i++) { // Show 3-5 days in quick scroll
+            const date = new Date(pDate);
+            date.setDate(pDate.getDate() + i);
+            const id = formatDate(date);
+            dQuickDates.push({
+                raw: date,
+                id: id,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateNum: date.getDate(),
+                month: date.toLocaleDateString('en-US', { month: 'short' })
+            });
         }
-    }, [pickupDate, userModifiedDelivery]);
+
+        return { min: minStr, max: maxStr, quickDates: dQuickDates };
+    }, [pickupDate]);
+
+    // Enforce range constraint
+    useEffect(() => {
+        if (pickupDate && deliveryDate) {
+            if (deliveryDate < deliveryRange.min || deliveryDate > deliveryRange.max) {
+                setDeliveryDate(deliveryRange.min);
+            }
+        } else if (pickupDate && !deliveryDate) {
+            setDeliveryDate(deliveryRange.min);
+        }
+    }, [pickupDate, deliveryRange.min, deliveryRange.max, deliveryDate]);
 
     const handleDeliveryDateSelect = (id) => {
-        setDeliveryDate(id);
-        setUserModifiedDelivery(true);
+        if (id >= deliveryRange.min && id <= deliveryRange.max) {
+            setDeliveryDate(id);
+            setUserModifiedDelivery(true);
+        }
     };
 
     // ── Handlers ──
@@ -201,9 +239,30 @@ export default function Cart() {
     else if (deliveryTime && !paymentMethod) buttonPrompt = "Select Payment Method";
     else if (isReadyToCheckout) buttonPrompt = "Confirm Order";
 
+    // ── Official Paystack Integration ──
+    const paystackConfig = {
+        reference: (new Date()).getTime().toString(),
+        email: auth.currentUser?.email || "customer@lyceum.com",
+        amount: total * 100, // Paystack uses Kobo/Cents
+        publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+    };
+
+    const initializePayment = usePaystackPayment(paystackConfig);
+
+    const onSuccess = (reference) => {
+        console.log("Paystack Success:", reference);
+        handleFinalProcessing();
+    };
+
+    const onClosePaystack = () => {
+        console.log("Payment closed");
+        setIsProcessing(false);
+    };
+
     const handleCheckoutPrompt = () => {
         if (paymentMethod === 'Pay with Card') {
-            setShowPaystackModal(true);
+            setIsProcessing(true);
+            initializePayment(onSuccess, onClosePaystack);
         } else {
             handleFinalProcessing();
         }
@@ -244,8 +303,9 @@ export default function Cart() {
     };
 
     // ── Custom Date Selector Component ──
-    const DateSelector = ({ title, selected, onSelect }) => {
-        const isCustomSelected = selected && !quickDates.find(d => d.id === selected);
+    const DateSelector = ({ title, selected, onSelect, forceQuickDates, minDate, maxDate }) => {
+        const activeQuickDates = forceQuickDates || quickDates;
+        const isCustomSelected = selected && !activeQuickDates.find(d => d.id === selected);
 
         let customDisplay = null;
         if (isCustomSelected) {
@@ -264,7 +324,7 @@ export default function Cart() {
             <div className="mb-6">
                 <h3 className="font-bold text-white text-[14px] mb-3">{title}</h3>
                 <div className="flex overflow-x-auto gap-3 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {quickDates.map((item) => {
+                    {activeQuickDates.map((item) => {
                         const isSelected = selected === item.id;
                         return (
                             <button
@@ -283,7 +343,8 @@ export default function Cart() {
                     <div className="relative shrink-0 flex">
                         <input
                             type="date"
-                            min={todayStr}
+                            min={minDate || todayStr}
+                            max={maxDate}
                             className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                             onChange={(e) => {
                                 if (e.target.value) onSelect(e.target.value);
@@ -458,7 +519,14 @@ export default function Cart() {
                                         <p className="text-[11px] text-white/50 font-medium">Standard 3-day turnaround</p>
                                     </div>
                                 </div>
-                                <DateSelector title="Day" selected={deliveryDate} onSelect={handleDeliveryDateSelect} />
+                                <DateSelector 
+                                    title="Day" 
+                                    selected={deliveryDate} 
+                                    onSelect={handleDeliveryDateSelect} 
+                                    forceQuickDates={deliveryRange.quickDates} 
+                                    minDate={deliveryRange.min} 
+                                    maxDate={deliveryRange.max} 
+                                />
                                 <TimeSelector title="Time Window" selected={deliveryTime} onSelect={setDeliveryTime} />
                             </div>
                         </div>
@@ -503,6 +571,31 @@ export default function Cart() {
                                 <div className="mt-4 flex items-center justify-center gap-2 bg-[#0BA4DB]/5 p-3 rounded-xl border border-[#0BA4DB]/20">
                                     <svg className="w-4 h-4 text-[#0BA4DB]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
                                     <span className="text-xs font-bold text-[#0BA4DB]">Securely processed by Paystack</span>
+                                </div>
+                            )}
+
+                            {/* Manual Bank Details */}
+                            {paymentMethod === 'Bank Transfer' && (
+                                <div className="mt-4 p-5 bg-[#0F3024] rounded-2xl border border-white/10 shadow-xl overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
+                                    <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-3 opacity-60">Payment Details</h3>
+                                    <div className="space-y-3 relative z-10">
+                                        <div>
+                                            <p className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Bank Name</p>
+                                            <p className="text-white font-bold text-sm">Zenith Bank PLC</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Account Number</p>
+                                            <p className="text-[#E85D04] font-black text-lg tracking-widest">1234567890</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Account Name</p>
+                                            <p className="text-white font-bold text-sm">Lyceum Laundry Services</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-white/5 text-[10px] text-white/40 font-medium italic">
+                                        * Kindly use your Phone Number as the payment reference.
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -598,41 +691,6 @@ export default function Cart() {
                 </div>
             )}
 
-            {/* Paystack Mock Modal */}
-            {showPaystackModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white max-w-sm w-full rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0BA4DB]/10 rounded-full blur-xl -mr-10 -mt-10"></div>
-                        <h3 className="text-2xl font-extrabold text-[#0F3024] mb-1">Pay ₦{total.toLocaleString()}</h3>
-                        <p className="text-xs font-bold text-[#0BA4DB] flex items-center gap-1 mb-8">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                            Secure Paystack Gateway
-                        </p>
-                        
-                        <div className="space-y-5 relative z-10">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Card Number</label>
-                                <input type="text" placeholder="0000 0000 0000 0000" maxLength={19} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-1/2">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Expiry</label>
-                                    <input type="text" placeholder="MM/YY" maxLength={5} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
-                                </div>
-                                <div className="w-1/2">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">CVV</label>
-                                    <input type="password" placeholder="123" maxLength={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-medium focus:border-[#0BA4DB] focus:ring-1 focus:ring-[#0BA4DB] outline-none transition-colors" />
-                                </div>
-                            </div>
-                            
-                            <div className="flex gap-3 mt-8">
-                                <button onClick={() => setShowPaystackModal(false)} className="w-1/3 py-4 bg-gray-100 rounded-xl text-gray-800 font-bold hover:bg-gray-200 transition-colors">Cancel</button>
-                                <button onClick={handleFinalProcessing} className="w-2/3 py-4 bg-[#0BA4DB] rounded-xl text-white font-bold hover:bg-[#0993c4] shadow-lg shadow-[#0BA4DB]/30 transition-colors">Pay ₦{total.toLocaleString()}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
         </div>
     );

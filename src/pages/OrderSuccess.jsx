@@ -118,6 +118,27 @@ export default function OrderSuccess() {
                     ) : 'Copy Tracking Link'}
                 </button>
             </div>
+            
+            {orderSummary?.paymentMethod === 'Bank Transfer' && (
+                <div className="bg-[#E85D04]/10 border border-[#E85D04]/20 rounded-[32px] p-6 w-full max-w-sm mb-6 text-left">
+                    <h3 className="text-[#E85D04] font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Awaiting Payment
+                    </h3>
+                    <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+                        <div>
+                            <p className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Amount to Transfer</p>
+                            <p className="text-white font-bold text-lg">₦{orderSummary.total?.toLocaleString()}</p>
+                        </div>
+                        <div className="h-px bg-white/10 w-full"></div>
+                        <div>
+                            <p className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Bank details</p>
+                            <p className="text-white font-bold text-sm">Zenith Bank • 1234567890</p>
+                            <p className="text-white/60 text-xs mt-1 font-medium">Lyceum Laundry Services</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <p className="text-emerald-100/60 max-w-xs mb-12 text-sm">A rider will contact you soon for pickup and delivery.</p>
 
