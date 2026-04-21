@@ -15,6 +15,16 @@ import UserPricing from './pages/UserPricing';
 import Cart from './pages/Cart';
 import OrderSuccess from './pages/OrderSuccess';
 import Reviews from './pages/Reviews';
+import ResetPassword from './pages/ResetPassword';
+
+// Admin Pages
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminWalkInPOS from './pages/admin/AdminWalkInPOS';
+import AdminFinance from './pages/admin/AdminFinance';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminReviews from './pages/admin/AdminReviews';
 
 // Components
 import Header from './components/Header';
@@ -22,6 +32,10 @@ import BottomNav from './components/BottomNav';
 import AuthModal from './components/AuthModal';
 import SupportWidget from './components/SupportWidget';
 import Sidebar from './components/Sidebar';
+
+// Admin Components
+import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
+import AdminLayout from './components/admin/AdminLayout';
 
 function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -39,7 +53,9 @@ function AppContent() {
 
   // 🛑 Dynamic Layout Logic
   const isHomePage = location.pathname === '/';
-  const showSidebar = isLoggedIn && !isHomePage; // Only show sidebar if logged in AND NOT on home page
+  const isAdminPath = location.pathname.startsWith('/admin');
+  const showSidebar = isLoggedIn && !isHomePage && !isAdminPath; // Only show user sidebar if logged in, not on home, and NOT on admin
+  const showUserLayout = !isAdminPath;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -118,8 +134,8 @@ function AppContent() {
         </div>
       )}
 
-      {/* Show Header if logged out, OR if we are on the Home Page */}
-      {(!isLoggedIn || isHomePage) && (
+      {/* Show Header if logged out, OR if we are on the Home Page (But never on Admin pages) */}
+      {showUserLayout && (!isLoggedIn || isHomePage) && (
         <Header
           onOpenAuth={() => setIsAuthModalOpen(true)}
         />
@@ -129,13 +145,15 @@ function AppContent() {
       {showSidebar && <Sidebar onPromptLogout={() => setIsLogoutModalOpen(true)} />}
 
       {/* We wrap the routes in a layout container. (Uses our new showSidebar variable) */}
-      <div className={`${showSidebar ? 'lg:ml-64' : ''} sm:pb-0 pb-16`}>
+      <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<ServicesPricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/track" element={<Track />} />
+          <Route path="/track/:id" element={<Track />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Logged-In Routes */}
           <Route path="/orders" element={<Orders isLoggedIn={isLoggedIn} onOpenAuth={() => setIsAuthModalOpen(true)} />} />
@@ -144,25 +162,43 @@ function AppContent() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/community" element={<Reviews />} />
+
+          {/* 🔐 Admin Portal Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminProtectedRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="walkins" element={<AdminWalkInPOS />} />
+              <Route path="finance" element={<AdminFinance />} />
+              <Route path="reviews" element={<AdminReviews />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+          </Route>
         </Routes>
       </div>
 
-      {/* MOBILE BOTTOM NAV */}
-      <BottomNav
-        onOpenAuth={(route) => {
-          setPendingRoute(route);
-          setIsAuthModalOpen(true);
-        }}
-        isLoggedIn={isLoggedIn}
-        onPromptLogout={() => setIsLogoutModalOpen(true)}
-      />
+      {/* MOBILE BOTTOM NAV (User Portal only) */}
+      {showUserLayout && (
+        <BottomNav
+          onOpenAuth={(route) => {
+            setPendingRoute(route);
+            setIsAuthModalOpen(true);
+          }}
+          isLoggedIn={isLoggedIn}
+          onPromptLogout={() => setIsLogoutModalOpen(true)}
+        />
+      )}
 
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-      <SupportWidget />
+      {showUserLayout && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+      
+      {showUserLayout && <SupportWidget />}
     </div>
   );
 }

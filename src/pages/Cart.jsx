@@ -95,6 +95,17 @@ export default function Cart() {
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [locationError, setLocationError] = useState('');
     const [isProfileChecking, setIsProfileChecking] = useState(true);
+    const [shopStatus, setShopStatus] = useState({ isOpen: true, announcement: '' });
+
+    // ── Fetch Shop Status ──
+    useEffect(() => {
+        const unsubscribe = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+            if (docSnap.exists()) {
+                setShopStatus(docSnap.data().shop || { isOpen: true, announcement: '' });
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     // ── Fetch Profile ──
     useEffect(() => {
@@ -290,11 +301,12 @@ export default function Cart() {
     const steps = [isProfileComplete, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
     const completedStepsCount = steps.filter(Boolean).length;
     const progressPercent = cartItems.length === 0 ? 0 : (completedStepsCount / 6) * 100;
-    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0 && isProfileComplete;
+    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0 && isProfileComplete && shopStatus.isOpen;
 
     // Smart Button Text
     let buttonPrompt = "Enter Delivery Details";
-    if (!savedPhone || !address) buttonPrompt = "Complete Profile in Account Settings";
+    if (!shopStatus.isOpen) buttonPrompt = "Shop Currently Closed";
+    else if (!savedPhone || !address) buttonPrompt = "Complete Profile in Account Settings";
     else if (!pickupDate) buttonPrompt = "Select Pickup Date";
     else if (!pickupTime) buttonPrompt = "Select Pickup Time";
     else if (!deliveryDate) buttonPrompt = "Confirm Delivery Date";
@@ -477,6 +489,19 @@ export default function Cart() {
             </div>
 
             <div className="max-w-2xl mx-auto pt-6">
+                {!shopStatus.isOpen && (
+                    <div className="mx-4 mb-6 bg-red-50 border border-red-100 p-6 rounded-[32px] flex items-center gap-4 animate-in slide-in-from-top-4">
+                        <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shrink-0">
+                            <svg className="w-6 h-6 shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div>
+                            <h4 className="font-extrabold text-red-900 text-sm">We're Temporarily Closed</h4>
+                            <p className="text-red-700/70 text-[11px] font-bold mt-0.5 leading-tight uppercase tracking-wider">
+                                {shopStatus.announcement || "We're currently not accepting new orders. Please check back later!"}
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {cartItems.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
                         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">

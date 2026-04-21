@@ -240,7 +240,9 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-[#0F3024] text-sm">Order {order.id}</h4>
-                                            <p className="text-xs text-gray-400 font-medium mt-0.5">{new Date(order.placedAt).toLocaleDateString()} • {order.items?.map(c => c.service).join(', ')}</p>
+                                            <p className="text-xs text-gray-400 font-medium mt-0.5">
+                                                {(order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.placedAt || Date.now())).toLocaleDateString()} • {order.items?.map(c => c.service || c.name).join(', ')}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
@@ -262,7 +264,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white relative z-10 shrink-0">
                             <div>
                                 <h3 className="font-extrabold text-[#0F3024] text-xl">Order {selectedOrder.id}</h3>
-                                <p className="text-sm text-gray-500">{new Date(selectedOrder.placedAt).toLocaleDateString()}</p>
+                                <p className="text-sm text-gray-500">{(selectedOrder.createdAt?.toDate ? selectedOrder.createdAt.toDate() : new Date(selectedOrder.placedAt || Date.now())).toLocaleDateString()}</p>
                             </div>
                             <button onClick={() => setSelectedOrder(null)} className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

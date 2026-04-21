@@ -1,9 +1,18 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Loader2, AlertCircle, Info } from 'lucide-react';
 
 export default function UserPricing() {
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedItemId, setExpandedItemId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [config, setConfig] = useState(() => {
+        const saved = localStorage.getItem('lyceum_pricing_config');
+        return saved ? JSON.parse(saved) : null;
+    });
+
     const [itemQuantities, setItemQuantities] = useState(() => {
         const saved = localStorage.getItem('antigravity_pricing_quantities');
         return saved ? JSON.parse(saved) : {};
@@ -12,6 +21,19 @@ export default function UserPricing() {
         const saved = localStorage.getItem('antigravity_pricing_services');
         return saved ? JSON.parse(saved) : {};
     });
+
+    // ── Dynamic Config Fetch ──
+    useEffect(() => {
+        const unsubscribe = onSnapshot(doc(db, "settings", "global"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                setConfig(data);
+                localStorage.setItem('lyceum_pricing_config', JSON.stringify(data));
+            }
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
     // ── Persistence ──
     useEffect(() => {
@@ -22,52 +44,9 @@ export default function UserPricing() {
         localStorage.setItem('antigravity_pricing_services', JSON.stringify(selectedServices));
     }, [selectedServices]);
 
-    // ── Service Metadata & Descriptions ──
-    const servicesMeta = {
-        'wash-fold': { name: 'Wash & Fold', desc: 'Washed, dried, and neatly folded', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /> },
-        'ironing': { name: 'Ironing Only', desc: 'Professionally pressed and hung', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
-        'dry-clean': { name: 'Dry Clean', desc: 'Premium stain removal & care', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /> },
-    };
-
-    // ── Full Unified Items Data (From ServicesPricing) ──
-    const itemsData = [
-        {
-            id: 'tshirt', name: 'T-Shirt / Polo', image: 'https://img.icons8.com/color/96/t-shirt--v1.png',
-            services: { 'wash-fold': { price: 1500 }, 'ironing': { price: 800 }, 'dry-clean': { price: 2500 } }
-        },
-        {
-            id: 'shirt', name: 'Dress Shirt', image: 'https://img.icons8.com/color/96/shirt.png',
-            services: { 'wash-fold': { price: 1500 }, 'ironing': { price: 1000 }, 'dry-clean': { price: 2500 } }
-        },
-        {
-            id: 'trouser', name: 'Trousers / Jeans', image: 'https://img.icons8.com/color/96/trousers.png',
-            services: { 'wash-fold': { price: 2000 }, 'ironing': { price: 1200 }, 'dry-clean': { price: 3500 } }
-        },
-        {
-            id: 'shorts', name: 'Shorts', image: 'https://img.icons8.com/color/96/shorts.png',
-            services: { 'wash-fold': { price: 1000 }, 'ironing': { price: 700 }, 'dry-clean': { price: 2000 } }
-        },
-        {
-            id: 'dress', name: 'Dress', image: 'https://img.icons8.com/color/96/dress-front-view.png',
-            services: { 'wash-fold': { price: 2500 }, 'ironing': { price: 1500 }, 'dry-clean': { price: 5000 } }
-        },
-        {
-            id: 'suit', name: '2-Piece Suit', image: 'https://img.icons8.com/color/96/business-suit.png',
-            services: { 'dry-clean': { price: 8000 }, 'ironing': { price: 3000 } } // Suits usually don't have standard wash&fold
-        },
-        {
-            id: 'jacket', name: 'Jacket / Coat', image: 'https://img.icons8.com/color/96/jacket.png',
-            services: { 'dry-clean': { price: 5000 }, 'ironing': { price: 2500 } }
-        },
-        {
-            id: 'native', name: 'Native Wear', image: 'https://img.icons8.com/color/96/clothes.png',
-            services: { 'wash-fold': { price: 3000 }, 'ironing': { price: 2000 }, 'dry-clean': { price: 4000 } }
-        },
-        {
-            id: 'bedsheet', name: 'Bedsheet / Duvet', image: 'https://img.icons8.com/color/96/bed.png',
-            services: { 'wash-fold': { price: 3000 }, 'ironing': { price: 2000 }, 'dry-clean': { price: 8000 } }
-        }
-    ];
+    const servicesMeta = config?.services || {};
+    const itemsData = config?.items || [];
+    const shopStatus = config?.shop || { isOpen: true, announcement: "" };
 
     // ── Handlers ──
     const toggleExpand = (item) => {
@@ -128,7 +107,8 @@ export default function UserPricing() {
                     .join(', ');
                 
                 const combinedPrice = services.reduce((total, sid) => {
-                    return total + item.services[sid].price;
+                    // Update: pricing is now a number directly in the map
+                    return total + (item.services[sid]?.price || item.services[sid] || 0);
                 }, 0);
 
                 cartArray.push({
@@ -180,6 +160,33 @@ export default function UserPricing() {
                     </div>
                 </div>
             </div>
+
+            {/* Announcement Banner */}
+            {shopStatus.announcement && (
+                <div className="max-w-2xl mx-auto mt-6 px-4">
+                    <div className="bg-orange-50 border border-orange-100 p-4 rounded-[24px] flex items-center gap-4">
+                        <div className="w-10 h-10 bg-[#E85D04]/10 text-[#E85D04] rounded-full flex items-center justify-center shrink-0">
+                            <Info className="w-5 h-5" />
+                        </div>
+                        <p className="text-orange-900 text-xs font-bold leading-relaxed">{shopStatus.announcement}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Shop Closed Warning */}
+            {(!shopStatus.isOpen && !loading) && (
+                <div className="max-w-2xl mx-auto mt-6 px-4">
+                    <div className="bg-red-50 border border-red-100 p-4 rounded-[24px] flex items-center gap-4">
+                        <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
+                            <AlertCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-red-900 text-xs font-black uppercase tracking-widest">Shop is Currently Closed</p>
+                            <p className="text-red-700 text-[10px] font-bold">You can still browse prices, but order placement is temporarily disabled.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Unified Items List ── */}
             <div className="px-4 mt-6 max-w-2xl mx-auto space-y-4">
@@ -270,12 +277,15 @@ export default function UserPricing() {
                                                     {/* Service Info */}
                                                     <div className="flex items-start gap-3">
                                                         <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{meta.icon}</svg>
+                                                            {/* Render icon based on mapping */}
+                                                            {serviceId === 'wash-fold' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                                                            {serviceId === 'ironing' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                                                            {serviceId === 'dry-clean' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>}
                                                         </div>
                                                         <div>
                                                             <h4 className={`font-bold text-[14px] leading-tight transition-colors ${isSelected ? 'text-white' : 'text-[#0F3024]'}`}>{meta.name}</h4>
                                                             <p className={`text-[11px] font-medium mt-0.5 leading-snug transition-colors ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>{meta.desc}</p>
-                                                            <p className={`font-bold text-sm mt-1 transition-colors ${isSelected ? 'text-white' : 'text-[#E85D04]'}`}>₦{serviceData.price.toLocaleString()}</p>
+                                                            <p className={`font-bold text-sm mt-1 transition-colors ${isSelected ? 'text-white' : 'text-[#E85D04]'}`}>₦{(serviceData.price || serviceData).toLocaleString()}</p>
                                                         </div>
                                                     </div>
 
@@ -302,7 +312,7 @@ export default function UserPricing() {
             </div>
 
             {/* ── Floating "View Cart" Button ── */}
-            <div className={`fixed bottom-[88px] left-0 right-0 px-4 z-40 transition-all duration-500 ease-in-out lg:ml-64 ${totalItemsCount > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+            <div className={`fixed bottom-[88px] left-0 right-0 px-4 z-40 transition-all duration-500 ease-in-out lg:ml-64 ${totalItemsCount > 0 && shopStatus.isOpen ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
                 <div className="max-w-2xl mx-auto">
                     <Link to="/cart" state={{ cartItems: generateCartData() }} className="bg-[#0F3024] shadow-xl text-white rounded-2xl p-4 flex items-center justify-between hover:bg-[#0a2018] transition-colors">
                         <div className="flex items-center gap-3">
