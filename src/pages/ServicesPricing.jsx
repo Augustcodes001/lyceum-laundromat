@@ -7,28 +7,27 @@ import Footer from '../components/Footer';
 const PickupPill = () => {
     const [address, setAddress] = useState('');
     return (
-        <div className="flex flex-col sm:inline-flex sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-full overflow-hidden shadow-[0_6px_25px_rgba(0,0,0,0.12)] border border-gray-200 w-full sm:w-auto">
-            <div className="flex flex-col px-6 py-4 sm:py-3 border-b sm:border-b-0 sm:border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#0F3024]">Pickup</span>
-                <span className="text-[15px] text-gray-500 font-bold">Tonight</span>
+        <div className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-gray-200">
+            <div className="flex flex-col px-6 py-3 border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Pickup</span>
+                <span className="text-[14px] text-gray-500 font-medium">Tonight</span>
             </div>
-            <label className="flex items-center px-6 py-4 sm:py-3 flex-1 min-w-0 sm:min-w-[200px] cursor-text hover:bg-gray-50 transition-colors">
+            <label className="flex items-center px-6 py-3 min-w-[200px] cursor-text hover:bg-gray-50 transition-colors">
                 <div className="flex flex-col w-full">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#0F3024]">Where</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Where</span>
                     <input
                         type="text"
                         placeholder="Add address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="text-[15px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-bold"
+                        className="text-[14px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-medium"
                     />
                 </div>
             </label>
-            <button className="m-2 h-12 sm:w-11 sm:h-11 rounded-xl sm:rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-all shadow-lg shadow-[#E85D04]/30">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 sm:w-5 sm:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <button className="m-1.5 w-11 h-11 rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
-                <span className="sm:hidden ml-2 font-black uppercase text-sm tracking-widest text-white">Continue</span>
             </button>
         </div>
     );

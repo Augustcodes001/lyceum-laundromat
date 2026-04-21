@@ -9,11 +9,11 @@ export default function SupportWidget() {
     return () => window.removeEventListener('openSupport', handleOpenSupport);
   }, []);
   return (
-    <div className="hidden sm:flex fixed bottom-6 right-6 z-[60] flex-col items-end transition-all duration-300">
-
-      {/* ── THE POPOVER MENU ── */}
-      {isOpen && (
-        <div className="w-[340px] bg-white shadow-2xl rounded-2xl mb-4 overflow-hidden border border-gray-100 animate-slide-up origin-bottom-right">
+    <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[200] flex flex-col items-end transition-all duration-300">
+ 
+       {/* ── THE POPOVER MENU ── */}
+       {isOpen && (
+         <div className="w-[88vw] max-w-[340px] bg-white shadow-2xl rounded-2xl mb-4 overflow-hidden border border-gray-100 animate-slide-up origin-bottom-right">
 
           {/* Header */}
           <div className="bg-[#0F3024] text-white p-5 flex justify-between items-center">

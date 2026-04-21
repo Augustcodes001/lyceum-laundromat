@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -18,6 +18,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   }, [isOpen]);
 
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -90,6 +91,27 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMsg("Please enter your email address first.");
+      setSuccessMsg('');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMsg("Password reset email sent! Check your inbox.");
+    } catch (error) {
+      setErrorMsg(getFriendlyErrorMessage(error.code));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getFriendlyErrorMessage = (code) => {
     switch (code) {
       case 'auth/invalid-email':
@@ -148,8 +170,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
           {/* 🛑 WE ADDED onSubmit={handleSubmit} HERE */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             {errorMsg && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold shadow-inner border border-red-100">
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold shadow-inner border border-red-100 animate-in fade-in zoom-in duration-300">
                 {errorMsg}
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl text-sm font-bold shadow-inner border border-emerald-100 animate-in fade-in zoom-in duration-300">
+                {successMsg}
               </div>
             )}
 
@@ -186,6 +214,17 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
                 placeholder="••••••••"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-[15px] text-[#0F3024] outline-none focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] transition-all"
               />
+              {isLoginView && (
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-xs font-bold text-[#E85D04] hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Just a normal type="submit" button now! */}

@@ -46,7 +46,7 @@ const DesktopPickupPill = () => {
         </div>
 
         <Link
-          to="/services"
+          to="/pricing"
           className={`ml-2 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${address.trim().length > 0
             ? 'bg-[#E85D04] text-white hover:bg-[#cc5203] hover:scale-105 shadow-md pointer-events-auto'
             : 'bg-gray-100 text-gray-400 pointer-events-none opacity-50'
@@ -64,14 +64,7 @@ const DesktopPickupPill = () => {
 export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
   const [mobileAddress, setMobileAddress] = useState('');
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
-
-  useEffect(() => {
-    const handleOpenSupport = () => setIsSupportModalOpen(true);
-    window.addEventListener('openSupport', handleOpenSupport);
-    return () => window.removeEventListener('openSupport', handleOpenSupport);
-  }, []);
 
   return (
     <>
@@ -95,7 +88,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
               <NavLink to="/">Home</NavLink>
               <a href="/#about" className="relative flex items-center px-4 py-2 rounded-full text-[16px] font-[500] tracking-[-0.01em] text-[#0F3024] transition-all hover:text-[#E85D04]">About</a>
               <a href="/#delivery" className="relative flex items-center px-4 py-2 rounded-full text-[16px] font-[500] tracking-[-0.01em] text-[#0F3024] transition-all hover:text-[#E85D04]">Delivery</a>
-              <NavLink to="/services"> Pricing</NavLink>
+              <NavLink to="/pricing"> Services/Pricing</NavLink>
             </nav>
 
             {/* DESKTOP RIGHT SIDE */}
@@ -121,7 +114,11 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
 
             {/* TABLET & MOBILE RIGHT SIDE */}
             <div className="flex lg:hidden items-center space-x-1 sm:space-x-2">
-              <button onClick={() => setIsSupportModalOpen(true)} className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors">
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('openSupport'))} 
+                className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors"
+                title="Support"
+              >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z" />
                   <path d="M21 16v2a4 4 0 0 1-4 4h-5" />
@@ -179,7 +176,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
             <Link to="/" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Home</Link>
             <a href="/#about" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">About Us</a>
             <a href="/#delivery" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Delivery</a>
-            <Link to="/services" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Pricing & Services</Link>
+            <Link to="/pricing" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Pricing & Services</Link>
           </nav>
 
           <div className="h-px bg-gray-100 w-full mb-8"></div>
@@ -242,29 +239,6 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
           <input type="text" placeholder="Enter your address..." value={mobileAddress} onChange={(e) => setMobileAddress(e.target.value)} className="flex-1 bg-transparent outline-none text-[16px] text-[#0F3024] placeholder-gray-400" />
         </div>
         <button onClick={() => setIsLocationModalOpen(false)} className="w-full mt-4 bg-[#E85D04] text-white py-3.5 rounded-xl font-bold text-[16px] shadow-md">Confirm Location</button>
-      </div>
-
-      {/* MOBILE SUPPORT BOTTOM SHEET */}
-      <div className={`fixed inset-0 bg-black/40 z-[200] transition-opacity duration-300 lg:hidden ${isSupportModalOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSupportModalOpen(false)}></div>
-      <div className={`fixed bottom-0 left-0 w-full bg-white rounded-t-2xl z-[201] p-6 shadow-2xl transition-transform duration-300 lg:hidden flex flex-col max-h-[85vh] ${isSupportModalOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-        <div className="flex justify-between items-center mb-6 shrink-0">
-          <div>
-            <h3 className="text-xl font-bold text-[#0F3024]">Need Help?</h3>
-            <p className="text-sm text-gray-500 mt-1">Send us a message and we'll reply ASAP.</p>
-          </div>
-          <button onClick={() => setIsSupportModalOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-600 self-start"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
-        </div>
-        <div className="overflow-y-auto overscroll-contain space-y-4 pb-safe">
-          <div>
-            <label className="block text-sm font-semibold text-[#0F3024] mb-1.5">Email Address</label>
-            <input type="email" placeholder="hello@example.com" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-[16px] text-[#0F3024] outline-none focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] transition-all" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#0F3024] mb-1.5">How can we help?</label>
-            <textarea rows="4" placeholder="Describe your issue..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-[16px] text-[#0F3024] outline-none focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04] transition-all resize-none"></textarea>
-          </div>
-          <button onClick={() => setIsSupportModalOpen(false)} className="w-full mt-2 bg-[#E85D04] text-white py-3.5 rounded-xl font-bold text-[16px] shadow-md hover:bg-[#cc5203] transition-colors">Send Message</button>
-        </div>
       </div>
     </>
   );

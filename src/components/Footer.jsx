@@ -35,7 +35,7 @@ export default function Footer() {
               <Link to="/" className="hover:text-lyceum-orange transition-colors w-fit">Home</Link>
               <a href="/#about" className="hover:text-lyceum-orange transition-colors w-fit">About Us</a>
               <a href="/#delivery" className="hover:text-lyceum-orange transition-colors w-fit">Delivery Updates</a>
-              <Link to="/services" className="hover:text-lyceum-orange transition-colors w-fit">Services & Pricing</Link>
+              <Link to="/pricing" className="hover:text-lyceum-orange transition-colors w-fit">Services & Pricing</Link>
             </nav>
           </div>
 
