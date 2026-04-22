@@ -45,7 +45,7 @@ function SocialProof() {
       </div>
       <span className="text-sm font-bold text-[#0F3024]">4.9</span>
       <span className="text-sm text-gray-300">|</span>
-      <span className="text-sm text-gray-500">2,000+ happy customers</span>
+      <span className="text-sm text-gray-500">500+ happy customers</span>
     </div>
   );
 }
@@ -81,7 +81,7 @@ export default function Hero() {
             </h1>
 
             <p className="text-[1.1rem] md:text-[1.2rem] text-gray-600 leading-relaxed mb-8 max-w-[26rem]">
-              Lyceum picks up, cleans, and delivers your laundry and dry cleaning — right to your door, <strong className="text-[#0F3024] font-semibold">next day.</strong>
+              Lyceum picks up, cleans, and delivers your laundry and dry cleaning — right to your door, <strong className="text-[#0F3024] font-semibold">after 72 hours.</strong>
             </p>
 
             <PickupPill address={address} setAddress={setAddress} />

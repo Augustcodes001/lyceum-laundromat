@@ -114,8 +114,8 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
 
             {/* TABLET & MOBILE RIGHT SIDE */}
             <div className="flex lg:hidden items-center space-x-1 sm:space-x-2">
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('openSupport'))} 
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('openSupport'))}
                 className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors"
                 title="Support"
               >
@@ -175,7 +175,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
           <nav className="flex flex-col space-y-5 mb-8">
             <Link to="/" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Home</Link>
             <a href="/#about" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">About Us</a>
-            <a href="/#delivery" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Delivery</a>
+            <a href="/#delivery-updates" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Delivery</a>
             <Link to="/pricing" onClick={() => setIsHamburgerOpen(false)} className="text-xl font-bold text-[#0F3024] hover:text-[#E85D04] transition-colors">Pricing & Services</Link>
           </nav>
 

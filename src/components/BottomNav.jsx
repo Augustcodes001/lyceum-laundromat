@@ -7,8 +7,8 @@ export default function BottomNav({ onOpenAuth, isLoggedIn, onPromptLogout }) {
     // 🔴 LOGGED OUT NAV ITEMS
     const loggedOutItems = [
         { name: 'Home', path: '/', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /> },
-        { name: 'Orders', path: '/orders', requiresAuth: true, icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2m-4-2h4m-4 2h4" /> },
         { name: 'Services', path: '/pricing', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /> },
+        { name: 'Orders', path: '/orders', requiresAuth: true, icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2m-4-2h4m-4 2h4" /> },
         { name: 'Account', path: '/account', requiresAuth: true, icon: <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /> },
     ];
 
@@ -25,8 +25,8 @@ export default function BottomNav({ onOpenAuth, isLoggedIn, onPromptLogout }) {
 
     return (
         <div className={`sm:hidden fixed bottom-0 left-0 right-0 border-t pb-safe z-50 transition-colors duration-300 ${isLoggedIn
-                ? 'bg-[#0F3024] border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]'
-                : 'bg-white border-gray-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]'
+            ? 'bg-[#0F3024] border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]'
+            : 'bg-white border-gray-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]'
             }`}>
             <div className="flex justify-around items-center h-[72px] px-2">
                 {navItems.map((item) => {

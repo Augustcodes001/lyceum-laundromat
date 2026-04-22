@@ -1,30 +1,68 @@
 // src/pages/ServicesPricing.jsx
 import { useState, useEffect } from 'react';
-// import Header from '../components/Header';
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-// Inline PickupPill
+// ── CUSTOM PRICING SVG ICONS ──
+const ItemIcon = ({ name }) => {
+    const itemName = name.toLowerCase();
+
+    // Default brand colors
+    const strokeProps = { stroke: "currentColor", strokeWidth: "2", fill: "none", strokeLinecap: "round", strokeLinejoin: "round" };
+
+    if (itemName.includes('polo') || itemName.includes('shirt') || itemName.includes('hoodie') || itemName.includes('cardigan')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" /></svg>;
+    }
+    if (itemName.includes('jean') || itemName.includes('trouser') || itemName.includes('short')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M6 4h12l-1 18h-3l-2-8-2 8H8L7 4z" /></svg>;
+    }
+    if (itemName.includes('shoe')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M4 14l3-3h4l4 2 4 1a2 2 0 011 2v1a2 2 0 01-2 2H6a2 2 0 01-2-2v-3z" /></svg>;
+    }
+    if (itemName.includes('bed') || itemName.includes('duvet')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M3 14h18M3 10h18M5 6h14v4H5V6zM3 18h18" /></svg>;
+    }
+    if (itemName.includes('rug') || itemName.includes('towel') || itemName.includes('curtain')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><path d="M4 8h16M4 16h16" /></svg>;
+    }
+    if (itemName.includes('suit') || itemName.includes('agbada') || itemName.includes('gown') || itemName.includes('jumpsuit') || itemName.includes('safari')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M8 3h8l4 6-2 12H6L4 9l4-6z" /><path d="M12 3v18M8 9h8" /></svg>;
+    }
+    if (itemName.includes('iron')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M4 15h16v-2a6 6 0 00-6-6H8a4 4 0 00-4 4v4z" /><path d="M14 15v4h4v-4" /></svg>;
+    }
+    if (itemName.includes('starch')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M10 5h4v4h-4zM12 9v10M8 19h8M14 5l2-2h3M16 3v3" /></svg>;
+    }
+    if (itemName.includes('bag')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0" /></svg>;
+    }
+    // Default Tag/Accessory Icon (Caps, socks, ties, boxers)
+    return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>;
+};
+
+// ── PickupPill Component (Perfectly Aligned) ──
 const PickupPill = () => {
     const [address, setAddress] = useState('');
     return (
-        <div className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-gray-200">
-            <div className="flex flex-col px-6 py-3 border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Pickup</span>
-                <span className="text-[14px] text-gray-500 font-medium">Tonight</span>
+        <div className="inline-flex items-center bg-white rounded-full overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.08)] border border-gray-200 h-16">
+            <div className="flex flex-col px-6 border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors select-none h-full justify-center">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F3024] leading-none mb-1">Pickup</span>
+                <span className="text-[14px] text-gray-500 font-medium leading-none">Tonight</span>
             </div>
-            <label className="flex items-center px-6 py-3 min-w-[200px] cursor-text hover:bg-gray-50 transition-colors">
-                <div className="flex flex-col w-full">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F3024]">Where</span>
+            <label className="flex items-center px-6 min-w-[200px] cursor-text hover:bg-gray-50 transition-colors h-full">
+                <div className="flex flex-col w-full h-full justify-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F3024] leading-none mb-1.5">Where</span>
                     <input
                         type="text"
-                        placeholder="Add address"
+                        placeholder="Add address..."
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="text-[14px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-medium"
+                        className="text-[14px] text-gray-800 bg-transparent outline-none placeholder-gray-400 w-full font-medium leading-none p-0 border-0 focus:ring-0"
                     />
                 </div>
             </label>
-            <button className="m-1.5 w-11 h-11 rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-colors">
+            <button className="mr-2 w-12 h-12 rounded-full bg-[#E85D04] hover:bg-[#d65503] flex items-center justify-center flex-shrink-0 transition-colors shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
@@ -33,481 +71,390 @@ const PickupPill = () => {
     );
 };
 
+// ── SERVICES DATA ──
 const services = [
     {
-        id: 'wash-fold',
-        name: 'Wash & Fold',
+        id: 'washing',
+        name: 'Wash Only',
         icon: '🎒',
-        tagline: 'Built for people who don\'t waste time on chores that don\'t move them forward.',
-        description: 'We pick up your laundry, clean it with care using a dedicated machine, and return everything neatly folded – right down to pairing your socks.\n\nClothes are washed to your preferences and delivered on your schedule, so you can focus on what matters most.\n\nLet us take laundry off your to-do list – permanently.',
+        tagline: 'Built for people who don\'t waste time on chores.',
+        description: 'We pick up your everyday clothes, heavy duvets, intricate center rugs, pillows, and even your favorite shoes. Everything is washed with meticulous care using dedicated machines.\n\nLet us take laundry off your to-do list – permanently.',
+        imageUrl: '/washing-illustration.png',
         howItWorks: [
             {
-                title: 'We inspect your clothes and check your pockets',
-                desc: 'We do "pocket inspections" for you so nothing ends up in the wash that shouldn\'t. All pockets and clothes are inspected before being washed.',
+                title: 'We collect your everyday wear and bulky items',
+                desc: 'From clothes and shoes to heavy items like duvets and center rugs, we pick it all up right from your doorstep.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            },
+            {
+                title: 'We sort and inspect everything',
+                desc: 'We do thorough pocket inspections and separate your lights, darks, and delicate items to ensure safe washes.',
                 icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             },
             {
-                title: 'We clean your items with extra care',
-                desc: 'Your lights and darks are separated and all your clothes are washed using cold water to preserve color (and save energy).',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            },
-            {
-                title: 'We wash your loads according to your choices',
-                desc: 'Need hypoallergenic detergent? Want fabric softener? Just select the laundry preferences that are right for you.',
+                title: 'We wash according to your preferences',
+                desc: 'Your items are cleaned with the utmost care. Need specific detergents or cold water? We tailor the wash to your exact choices.',
                 icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             },
             {
-                title: 'We fold everything so that you don\'t have to',
-                desc: 'Your clothes are crisply folded, and your socks are paired, ready to be worn or put away when we deliver your clothes to your door!',
+                title: 'We return it fresh and clean',
+                desc: 'Your laundry is returned fresh, securely packaged, and ready to be put away or worn.',
                 icon: <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             },
         ],
         pricing: {
-            payAsYouGo: {
-                subtitle: 'Occasional, priced per pound.',
-                price: '$3.49 / lb',
-                prefix: 'Always',
-                features: [
-                    '$9.95 Pickup & Delivery Fee',
-                    '3-4 Day Turnaround or $9.95 Next-Day Rush',
-                    '$5 Service Fee',
-                    'Household items priced separately',
-                ],
-            },
-            subscription: {
-                subtitle: 'All-inclusive subscription, priced per bag.',
-                price: '$1.64 / lb',
-                prefix: 'As low as*',
-                features: [
-                    'Free Pickup & Delivery',
-                    'Free Next-Day Rush Service',
-                    'Waived Service Fee',
-                    'If it fits the bag, we\'ll clean it',
-                    'Unlimited rollover of bags and pounds',
-                    '$10 in monthly credit for other services',
-                ],
-            },
-        },
-        fees: [
-            { title: 'Service Fee', price: '$5', desc: 'It helps cover our operational costs and ensure we can provide the best experience possible.' },
-            { title: 'Pickup & Delivery', price: '$9.95', desc: 'This covers the cost of both picking up and delivering your orders. All Valets are trained W-2 employees.', freeSub: true },
-            { title: 'Next-Day Rush Service', price: '$9.95', desc: 'Get your Wash & Fold and Hang Dry orders back in 24 hours.', freeSub: true },
-            { title: 'Minimum order', price: '', desc: 'All orders have a $30 order minimum.', freeSub: true },
-        ],
-        pickupDetails: {
-            text: 'All pickups and deliveries are between 7pm and 10pm. At 5:30pm, we’ll text you a 30‑minute arrival window of your Valet.',
-            subtext: 'After creating your account, activate Lyceum Drop for contact-free pickup and delivery. Our Valet will pick up and deliver your order to your doorstep, building reception, or another place of your choosing.',
+            items: [
+                { name: 'Regular Clothes (Wash Only)', price: '₦350' },
+                { name: 'Pair of Shoe', price: '₦1,000' },
+                { name: 'Duvet', price: '₦2,000' },
+                { name: 'White duvet', price: '₦2,500' },
+                { name: 'Center rug', price: '₦7,000' }
+            ]
         }
     },
     {
         id: 'dry-cleaning',
-        name: 'Dry Cleaning',
+        name: 'Wash, Starch & Iron',
         icon: '👔',
-        tagline: 'Expert care for your everyday and special garments.',
-        description: 'We use a customized cleaning process designed to protect and extend the life of your garments. From inspecting garments for stains to choosing the optimal cleaning solvent to hand finishing, your items will be expertly cleaned and ready to wear.',
+        tagline: 'Impeccable complete care for your entire wardrobe.',
+        description: 'Our most comprehensive service. We expertly wash, perfectly starch, and professionally iron your garments so they are returned to you in pristine, retail-ready condition.\n\nFrom high-end couture to your everyday jeans and polos, our experts ensure your garments look spectacular.',
+        imageUrl: '/drycleaning-illustration.png',
         howItWorks: [
             {
-                title: 'We inspect your clothes',
-                desc: 'Your clothes are inspected for stains and necessary repairs.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z m7.5 0c-.918-3.1-3.627-5.5-7.5-5.5S8.418 8.9 7.5 12c.918 3.1 3.627 5.5 7.5 5.5s6.582-2.4 7.5-5.5z" />
-            },
-            {
-                title: 'We pre-treat your stains',
-                desc: 'Spots and stains are pre-treated.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-            },
-            {
-                title: 'We wash your clothes with care',
-                desc: 'Your garments are cleaned using the optimal solvent and drying method.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            },
-            {
-                title: 'We hand press your clothes',
-                desc: 'Your garments are pressed by hand and returned on a hanger.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            }
-        ],
-        pricing: {
-            items: [
-                { name: 'Laundered & Pressed Shirt', price: '$3.95', img: 'https://img.icons8.com/color/96/shirt.png' },
-                { name: 'Dress Shirt (Dry Cleaned)', price: '$8.45', img: 'https://img.icons8.com/color/96/clothes.png' },
-                { name: 'Polo/Knit Shirt', price: '$7.45', img: 'https://img.icons8.com/color/96/t-shirt.png' },
-                { name: 'T-shirt', price: '$6.45', img: 'https://img.icons8.com/color/96/t-shirt--v1.png' },
-                { name: 'Blouse', price: '$8.45', img: 'https://img.icons8.com/color/96/womens-shirt.png' },
-                { name: 'Pants', price: '$8.95', img: 'https://img.icons8.com/color/96/trousers.png' },
-                { name: 'Shorts', price: '$8.45', img: 'https://img.icons8.com/color/96/shorts.png' },
-                { name: 'Sweater', price: '$9.45', img: 'https://img.icons8.com/color/96/sweater.png' },
-                { name: 'Dress', price: '$16.95', img: 'https://img.icons8.com/color/96/dress-front-view.png' },
-                { name: 'Skirt', price: '$8.95', img: 'https://img.icons8.com/color/96/skirt.png' },
-                { name: 'Blazer/Sport Coat', price: '$10.95', img: 'https://img.icons8.com/color/96/jacket.png' },
-                { name: 'Suit', price: '$18.95', img: 'https://img.icons8.com/color/96/business-suit.png' },
-                { name: 'Tie', price: '$6.95', img: 'https://img.icons8.com/color/96/tie.png' },
-            ]
-        },
-        fees: [
-            { title: 'Service Fee', price: '$5', desc: 'It helps cover our operational costs and ensure we can provide the best experience possible.' },
-            { title: 'Pickup & Delivery', price: '$9.95', desc: 'This covers the cost of both picking up and delivering your orders. All Valets are W-2 employees.', freeSub: true },
-            { title: 'Minimum order', price: '', desc: 'All orders have a $30 order minimum.', freeSub: true }
-        ],
-        pickupDetails: {
-            text: 'All pickups and deliveries are between 8pm and 10pm. At 7:30pm, we’ll text you a 30‑minute arrival window of your Valet.',
-            subtext: 'After creating your account, activate Lyceum Drop for contact-free pickup and delivery. Our Valet will pick up and deliver your order to your doorstep, building reception, or another place of your choosing.'
-        }
-    },
-    {
-        id: 'hang-dry',
-        name: 'Hang Dry',
-        icon: '👗',
-        tagline: 'Air-dried freshness for your delicates.',
-        description: 'We pick up your delicates, clean them with care using cold water, and hang them to dry in a climate-controlled environment to protect their shape and fit.\n\nClothes are washed to your preferences and delivered on your schedule, so you can focus on what matters most.\n\nLet us take laundry off your to-do list - permanently.',
-        howItWorks: [
-            {
-                title: 'We inspect your clothes and check your pockets',
-                desc: 'We do "pocket inspections" for you so nothing ends up in the wash that shouldn\'t. All pockets and clothes are inspected before being washed.',
+                title: 'We inspect and tag every garment',
+                desc: 'Each piece is carefully examined for existing damage, loose buttons, and stubborn stains.',
                 icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             },
             {
-                title: 'We clean your items with extra care',
-                desc: 'Your lights and darks are separated and all your clothes are washed using cold water to preserve color (and save energy).',
+                title: 'We clean and protect fabrics',
+                desc: 'Your clothes are expertly washed using premium detergents that remove dirt while protecting the fabric.',
                 icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             },
             {
-                title: 'We wash your loads according to your choices',
-                desc: 'Need hypoallergenic detergent? Want fabric softener? Just select the laundry preferences that are right for you.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                title: 'We apply professional starch',
+                desc: 'Based on the fabric and your preference, we apply the perfect level of starch for that crisp, sharp edge.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             },
             {
-                title: 'We hang everything so that you don\'t have to',
-                desc: 'Your clothes are carefully hung to dry in a climate-controlled environment, then returned to you on hangers so they\'re ready to be put away.',
-                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                title: 'We press, package, and deliver',
+                desc: 'After a final quality check, your garments are professionally ironed, wrapped securely, and delivered to your home.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             }
         ],
         pricing: {
             items: [
-                { name: 'Hang Dry Shirt', price: '$3.95', img: 'https://img.icons8.com/color/96/shirt.png' },
-                { name: 'Hang Dry Blouse', price: '$8.45', img: 'https://img.icons8.com/color/96/womens-shirt.png' },
-                { name: 'Hang Dry Pants', price: '$8.95', img: 'https://img.icons8.com/color/96/trousers.png' },
-                { name: 'Hang Dry T-shirt', price: '$6.45', img: 'https://img.icons8.com/color/96/t-shirt--v1.png' },
-                { name: 'Hang Dry Dress', price: '$16.95', img: 'https://img.icons8.com/color/96/dress-front-view.png' },
-                { name: 'Hang Dry Skirt', price: '$8.95', img: 'https://img.icons8.com/color/96/skirt.png' },
-                { name: 'Hang Dry Sweater', price: '$9.45', img: 'https://img.icons8.com/color/96/sweater.png' },
-                { name: 'Hang Dry Shorts', price: '$8.45', img: 'https://img.icons8.com/color/96/shorts.png' },
+                { name: 'For polo', price: '₦500' },
+                { name: 'Short', price: '₦500' },
+                { name: 'Jean trouser', price: '₦500' },
+                { name: 'Jean top', price: '₦500' },
+                { name: 'Joggers', price: '₦500' },
+                { name: 'Complete Jean', price: '₦1,000' },
+                { name: 'Hoodie', price: '₦500' },
+                { name: 'Gown', price: '₦800' },
+                { name: 'Skirt', price: '₦500' },
+                { name: 'Jumpsuits', price: '₦800' },
+                { name: 'Cardigan', price: '₦500' },
+                { name: 'T-Shirt', price: '₦500' },
+                { name: 'Trouser', price: '₦500' },
+                { name: 'Native up and down', price: '₦1,000' },
+                { name: 'Complete Agbada', price: '₦1,800' },
+                { name: 'Bedspread', price: '₦500' },
+                { name: 'White bedspread', price: '₦700' },
+                { name: 'Big towel', price: '₦700' },
+                { name: 'White big towel', price: '₦800' },
+                { name: 'Small towel', price: '₦400' },
+                { name: 'White small towel', price: '₦500' },
+                { name: 'Jalavia(safari)', price: '₦800' },
+                { name: 'Complete suit', price: '₦1,800' },
+                { name: 'Cap', price: '₦400' },
+                { name: 'Boxer', price: '₦300' },
+                { name: 'Singlet', price: '₦300' },
+                { name: 'Socks', price: '₦200' },
+                { name: 'Scarf', price: '₦200' },
+                { name: 'School bag', price: '₦1,500' },
+                { name: 'Travelling bags', price: '₦3,000' },
+                { name: 'Curtains', price: '₦1,200' }
             ]
-        },
-        fees: [
-            { title: 'Service Fee', price: '$5', desc: 'It helps cover our operational costs and ensure we can provide the best experience possible.' },
-            { title: 'Pickup & Delivery', price: '$9.95', desc: 'This covers the cost of both picking up and delivering your orders. All Valets are W-2 employees.', freeSub: true },
-            { title: 'Next-Day Rush Service', price: '$9.95', desc: 'Get your Wash & Fold and Hang Dry orders back in 24 hours.', freeSub: true },
-            { title: 'Minimum order', price: '', desc: 'All orders have a $30 order minimum.', freeSub: true }
-        ],
-        pickupDetails: {
-            text: 'All pickups and deliveries are between 8pm and 10pm. At 7:30pm, we’ll text you a 30‑minute arrival window of your Valet.',
-            subtext: 'After creating your account, activate Lyceum Drop for contact-free pickup and delivery. Our Valet will pick up and deliver your order to your doorstep, building reception, or another place of your choosing.'
         }
     },
+    {
+        id: 'ironing',
+        name: 'Ironing & Starch',
+        icon: '✨',
+        tagline: 'Step into garments that feel flawlessly brand new.',
+        description: 'Your clothes deserve a retail-ready finish. We handle the meticulous pressing and precise starching so your wardrobe is always returned in pristine, closet-ready condition.\n\nNo more struggling with stubborn wrinkles or spending your mornings hunched over an ironing board. We deliver crisp, sharp perfection every single time.',
+        imageUrl: '/ironing-illustration.png',
+        howItWorks: [
+            {
+                title: 'We collect your clean, wrinkled garments',
+                desc: 'Schedule a pickup and we will grab your clean clothes that just need that perfect, professional press and starch.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            },
+            {
+                title: 'We sort by fabric type',
+                desc: 'Delicate silks, heavy cottons, and native wears are separated to ensure they receive the exact temperature and steam levels they need.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            },
+            {
+                title: 'We apply professional steam and starch',
+                desc: 'Using industrial-grade irons, we eliminate every crease. You can specify your preferred level of starch for that crisp, sharp edge.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            },
+            {
+                title: 'We hang, fold, and deliver to your door',
+                desc: 'Your garments are hung beautifully or folded crisply, then delivered right back to you, ready for the boardroom or your next event.',
+                icon: <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            }
+        ],
+        pricing: {
+            items: [
+                { name: 'Just ironing', price: '₦300' },
+                { name: 'Just Starch', price: '₦300' }
+            ]
+        }
+    }
 ];
 
-const ServiceToggle = ({ activeService, setActiveService }) => (
-    <div className="sticky top-[72px] z-30 bg-[#F6F8F7]/95 backdrop-blur-md py-3 border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto px-4 overflow-x-auto scrollbar-hide flex sm:justify-center">
-            <div className="flex bg-white p-1 rounded-full shadow-sm border border-gray-200 shrink-0">
-                {services.map((service) => (
-                    <button
-                        key={service.id}
-                        onClick={() => setActiveService(service.id)}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black tracking-widest transition-all duration-300 shrink-0 ${activeService === service.id
-                                ? 'bg-[#fef3c7] text-[#0F3024] shadow-sm border border-yellow-600/20'
-                                : 'text-gray-400 hover:text-[#0F3024] hover:bg-gray-50'
-                            }`}
-                    >
-                        <span className="uppercase">{service.name}</span>
-                        <span className="text-base">{service.icon}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
-    </div>
-);
-
 export default function ServicesPricing() {
-    const [activeServiceId, setActiveServiceId] = useState('wash-fold');
+    const [activeTabId, setActiveTabId] = useState('washing');
     const [showAllPricing, setShowAllPricing] = useState(false);
-    const activeService = services.find((s) => s.id === activeServiceId);
+    const activeService = services.find(s => s.id === activeTabId);
 
-    // Reset the "Show All" toggle whenever a new category is selected
     useEffect(() => {
+        window.scrollTo(0, 0);
         setShowAllPricing(false);
-    }, [activeServiceId]);
+    }, [activeTabId]);
 
     return (
-        <div className="bg-[#F6F8F7] min-h-screen">
-            {/* <Header /> */}
+        <div className="min-h-screen bg-slate-50 font-sans text-[#0F3024] selection:bg-[#E85D04] selection:text-white flex flex-col m-0 p-0 w-full overflow-x-hidden">
+            <Header />
 
-            {/* HERO SECTION */}
-            <div id = "services" className="relative w-full h-[500px] md:h-[600px] bg-[#0F3024] overflow-hidden">
-                <div className="absolute -right-20 -top-20 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl"></div>
+            {/* 🌟 MARGIN FIX: Absolute block to cover any accidental parent padding */}
+            <div className="absolute top-0 left-0 w-full h-[600px] bg-[#0F3024] z-[-1]"></div>
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 h-full flex flex-col justify-center">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center h-full">
-                        <div className="text-center lg:text-left">
-                            <h1 className="text-[2.6rem] sm:text-5xl md:text-7xl font-extrabold text-white leading-[1.05] sm:leading-[1.1] tracking-tight max-w-3xl uppercase">
-                                We'll take the laundry.<br />
-                                <span className="text-[#E85D04]">You take the time.</span>
-                            </h1>
-                            <div className="mt-10 sm:mt-12 flex justify-center lg:justify-start">
-                                <PickupPill />
-                            </div>
+            {/* ── HERO SECTION ── */}
+            <header className="relative pt-[120px] md:pt-[150px] pb-24 lg:pb-36 bg-transparent w-full m-0 border-none">
+                <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#0F3024] to-[#164332]"></div>
+
+                {/* Deep Ambient Glowing Orbs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[50%] bg-[#1a4f3d] rounded-full blur-[120px] opacity-70 pointer-events-none"></div>
+                <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[40%] bg-[#E85D04] rounded-full blur-[140px] opacity-30 pointer-events-none"></div>
+
+                {/* Abstract Pattern */}
+                <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+
+                <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 text-center flex flex-col items-center">
+                    <span className="inline-block py-1.5 px-4 rounded-full bg-[#E85D04] text-white font-bold text-xs tracking-widest uppercase mb-6 shadow-[0_0_20px_rgba(232,93,4,0.3)]">
+                        Premium Garment Care
+                    </span>
+                    <h1 className="text-5xl lg:text-7xl font-black tracking-tight mb-6 text-white leading-[1.1] uppercase drop-shadow-lg">
+                        Services & <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E85D04] to-[#ff8c42]">Pricing</span>
+                    </h1>
+                    <p className="text-lg lg:text-xl text-gray-300 max-w-2xl font-medium text-balance mb-10 leading-relaxed">
+                        Transparent pricing for meticulous care. Choose the service you need, and we'll handle the rest.
+                    </p>
+                    <PickupPill />
+                </div>
+
+                {/* Slanted Bottom Edge Transition */}
+                <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
+                    <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[50px] md:h-[80px]" style={{ transform: 'rotate(180deg)' }}>
+                        <path d="M1200 120L0 16.48 0 0 1200 0 1200 120z" className="fill-slate-50"></path>
+                    </svg>
+                </div>
+            </header>
+
+            <main className="flex-grow z-10 relative bg-slate-50 pb-24 w-full">
+                <div className="max-w-7xl mx-auto px-6 lg:px-12">
+
+                    {/* ── TAB NAVIGATION ── */}
+                    <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-20 p-2 bg-white rounded-2xl md:rounded-full shadow-[0_15px_40px_-10px_rgba(15,48,36,0.15)] border border-gray-100 max-w-3xl mx-auto relative -mt-16 z-20">
+                        {services.map((service) => (
+                            <button
+                                key={service.id}
+                                onClick={() => setActiveTabId(service.id)}
+                                className={`flex items-center gap-2 px-6 py-4 rounded-xl md:rounded-full font-black text-sm md:text-base tracking-wide uppercase transition-all duration-300 flex-1 md:flex-none justify-center ${activeTabId === service.id
+                                    ? 'bg-[#0F3024] text-white shadow-xl shadow-[#0F3024]/30 scale-105'
+                                    : 'bg-transparent text-gray-500 hover:text-[#0F3024] hover:bg-gray-50'
+                                    }`}
+                            >
+                                <span className="text-xl">{service.icon}</span>
+                                {service.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* ── ACTIVE TAB CONTENT ── */}
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <h2 className="text-3xl md:text-4xl font-black mb-4 tracking-tight text-[#0F3024] uppercase">{activeService.tagline}</h2>
+                            <p className="text-gray-500 text-lg leading-relaxed whitespace-pre-line font-medium">
+                                {activeService.description}
+                            </p>
                         </div>
-                        <div className="hidden lg:flex items-center justify-center h-full">
-                            <div className="w-3/4 h-3/4 border-2 border-dashed border-white/20 rounded-3xl flex items-center justify-center bg-white/5">
-                                <span className="text-white/50 font-bold tracking-widest uppercase">[ Hero Illustration Here ]</span>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+
+                            {/* Left: How it Works */}
+                            <div className="lg:col-span-5 space-y-8 bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/40 relative overflow-hidden group hover:shadow-2xl transition-shadow duration-500">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#E85D04]/5 to-transparent rounded-full blur-3xl"></div>
+                                <h3 className="text-2xl font-black uppercase tracking-wide border-b-2 border-gray-100 pb-4 flex items-center gap-3 relative z-10 text-[#0F3024]">
+                                    <span className="w-8 h-8 rounded-full bg-[#E85D04] text-white flex items-center justify-center text-sm shadow-md shadow-orange-500/20">✦</span>
+                                    How it works
+                                </h3>
+                                <div className="space-y-8 relative before:absolute before:inset-y-0 before:left-[19px] before:w-[2px] before:bg-gray-100 z-10">
+                                    {activeService.howItWorks.map((step, idx) => (
+                                        <div key={idx} className="relative flex gap-6 group/step">
+                                            <div className="w-10 h-10 rounded-full bg-white border-2 border-[#0F3024] flex items-center justify-center flex-shrink-0 z-10 text-[#0F3024] group-hover/step:bg-[#0F3024] group-hover/step:text-white transition-all duration-300 shadow-sm group-hover/step:scale-110">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>{step.icon}</svg>
+                                            </div>
+                                            <div className="pt-1.5">
+                                                <h4 className="text-lg font-black mb-2 text-[#0F3024] uppercase tracking-wide">{step.title}</h4>
+                                                <p className="text-gray-500 font-medium leading-relaxed">{step.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right: Image + Pricing */}
+                            <div className="lg:col-span-7 space-y-10">
+                                <div className="relative h-64 md:h-80 rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-500 group bg-gray-100 border border-gray-200 flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-[#0F3024]/10 group-hover:bg-transparent transition-colors duration-500 z-10 mix-blend-overlay"></div>
+
+                                    {/* Will display your generated image path */}
+                                    <img src={activeService.imageUrl} alt={activeService.name} className="w-full h-full object-cover transform transition-transform duration-1000 group-hover:scale-105"
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+
+                                    {/* Fallback if image isn't generated yet */}
+                                    <span style={{ display: 'none' }} className="absolute text-gray-400 font-bold tracking-widest uppercase text-center px-4">
+                                        [ Render {activeService.imageUrl} ]
+                                    </span>
+
+                                    <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md rounded-2xl p-4 z-20 shadow-lg translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                                        <h4 className="font-black text-[#0F3024] text-lg uppercase tracking-wider">{activeService.name}</h4>
+                                        <p className="text-xs font-bold text-[#E85D04] uppercase tracking-widest">Premium Care Standards</p>
+                                    </div>
+                                </div>
+
+                                {/* Pricing Card */}
+                                <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-gray-100 shadow-xl shadow-gray-200/40 transition-shadow duration-500 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#0F3024] via-[#164332] to-[#E85D04]"></div>
+                                    <h3 className="text-2xl font-black uppercase tracking-wide mb-6 flex items-center gap-3 text-[#0F3024]">
+                                        <span className="w-8 h-8 rounded-full bg-[#0F3024]/10 text-[#0F3024] flex items-center justify-center text-sm font-black">₦</span>
+                                        Itemized Pricing
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+                                        {(showAllPricing ? activeService.pricing.items : activeService.pricing.items.slice(0, 8)).map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0 hover:bg-[#0F3024]/[0.03] px-3 rounded-xl transition-colors group/item cursor-default">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center p-2 group-hover/item:scale-110 transition-transform duration-300 border border-gray-100 shadow-sm text-[#0F3024]">
+                                                        {/* 🌟 Custom Inline SVG applied dynamically based on item name */}
+                                                        <ItemIcon name={item.name} />
+                                                    </div>
+                                                    <span className="font-semibold text-gray-700">{item.name}</span>
+                                                </div>
+                                                <span className="font-black text-[#E85D04] tracking-tight">{item.price}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {activeService.pricing.items.length > 8 && (
+                                        <div className="mt-8 flex justify-center">
+                                            <button
+                                                onClick={() => setShowAllPricing(!showAllPricing)}
+                                                className="px-8 py-3 rounded-xl font-bold text-[#E85D04] border-2 border-[#E85D04] hover:bg-[#E85D04] hover:text-white transition-all text-sm uppercase tracking-wider active:scale-95 shadow-sm"
+                                            >
+                                                {showAllPricing ? 'Hide full pricing' : 'See full pricing'}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-8 p-5 bg-[#0F3024]/5 border border-[#0F3024]/10 rounded-2xl flex items-start gap-4">
+                                        <svg className="w-6 h-6 text-[#E85D04] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <p className="text-sm text-[#0F3024]/80 font-semibold leading-relaxed">
+                                            Prices may vary slightly based on size, material, or condition upon physical inspection.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* STICKY TOGGLE */}
-            <ServiceToggle activeService={activeServiceId} setActiveService={setActiveServiceId} />
-
-            <main className="pb-24">
-                <div className="max-w-7xl mx-auto px-6 lg:px-12">
-
-                    {/* INTRO SPLIT SECTION */}
-                    {activeService.description && (
-                        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center py-16">
-                            <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-[#0F3024] mb-8">{activeService.name}</h2>
-                                <div className="space-y-6 text-lg text-gray-700 font-medium whitespace-pre-line">
-                                    <p className="font-semibold text-gray-900">{activeService.tagline}</p>
-                                    <p>{activeService.description}</p>
+                    {/* ── DELIVERY UPDATES ── */}
+                    <div className="mt-32 relative pb-10">
+                        <section className="w-full bg-[#0F3024] py-24 rounded-[3rem] relative overflow-hidden shadow-2xl">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#E85D04] rounded-full blur-[150px] opacity-10 pointer-events-none"></div>
+                            <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+                                <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20 flex flex-col items-center">
+                                    <h2 className="text-sm font-bold tracking-widest text-[#E85D04] uppercase mb-4 flex items-center gap-3">
+                                        <span className="w-8 h-[2px] bg-[#E85D04]"></span>
+                                        Logistics & Tracking
+                                        <span className="w-8 h-[2px] bg-[#E85D04]"></span>
+                                    </h2>
+                                    <h3 className="text-4xl md:text-5xl font-black text-white tracking-tight uppercase leading-[1.1]">
+                                        Never Guess When <br /><span className="text-[#E85D04]">We Will Arrive</span>
+                                    </h3>
                                 </div>
-                                <div className="mt-10">
-                                    <PickupPill />
-                                </div>
-                            </div>
+                                <div className="relative">
+                                    <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 pointer-events-none"></div>
+                                    <div className="hidden md:block absolute top-0 bottom-0 left-1/2 w-px bg-white/10 -translate-x-1/2 pointer-events-none"></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
 
-                            <div className="relative h-[400px] lg:h-[500px] rounded-2xl overflow-hidden bg-[#e2e8f0]/50 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                                <span className="text-gray-400 font-bold tracking-widest uppercase text-center px-4">
-                                    [ Insert "{activeService.name}" Illustration Here ]
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* HOW IT WORKS */}
-                    {activeService.howItWorks && activeService.howItWorks.length > 0 && (
-                        <div className="py-16 border-t border-gray-200">
-                            <h2 className="text-4xl font-extrabold text-[#0F3024] mb-4">How it works</h2>
-                            <p className="text-lg text-gray-600 mb-12 max-w-4xl">
-                                Lyceum will pick up your laundry, clean it according to best practices and your preferences, and deliver it back neatly folded—right to your door.
-                            </p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
-                                {activeService.howItWorks.map((step, idx) => (
-                                    <div key={idx} className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                                        <div className="flex items-center mb-6 w-full">
-                                            <div className="w-14 h-14 rounded-2xl border-2 border-[#0F3024] flex items-center justify-center flex-shrink-0 bg-white">
-                                                <svg className="w-6 h-6 text-[#0F3024]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    {step.icon}
-                                                </svg>
-                                            </div>
-                                            {idx < activeService.howItWorks.length - 1 && (
-                                                <div className="hidden lg:block h-[2px] bg-gray-200 flex-1 ml-4 mr-[-20px] relative">
-                                                    <div className="absolute right-0 top-[-3px] w-2 h-2 border-t-2 border-r-2 border-gray-300 rotate-45"></div>
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 relative p-6 sm:p-4 rounded-3xl sm:rounded-none bg-white/5 sm:bg-transparent border border-white/10 sm:border-transparent group transition-all duration-300 hover:bg-white/[0.03]">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-2xl bg-[#E85D04]/10 text-[#E85D04] flex items-center justify-center shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <h3 className="text-xl font-black text-[#0F3024] mb-3 sm:pr-4">{step.title}</h3>
-                                        <p className="text-gray-500 font-medium text-sm leading-relaxed">{step.desc}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* PRICING DYNAMIC RENDER */}
-                    {activeService.pricing && (
-                        <div className="py-16 border-t border-gray-200">
-
-                            {/* IF SERVICE HAS TIERED SUBSCRIPTION (Wash & Fold) */}
-                            {activeService.pricing.payAsYouGo && (
-                                <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-stretch">
-                                    <div className="lg:col-span-4 flex flex-col justify-center text-center lg:text-left">
-                                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#0F3024] leading-[1.2] mb-6">
-                                            Pricing That Fits Your Needs
-                                        </h2>
-                                        <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-md mx-auto lg:mx-0">
-                                            Two options, one goal: your convenience. Forget about laundry and <span className="text-[#0F3024] font-bold cursor-pointer underline decoration-2 underline-offset-4">save up to 60%</span> with Rinse Repeat.
-                                        </p>
-                                        <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-                                            <div className="flex -space-x-3">
-                                                {[1, 2, 3, 4].map(i => (
-                                                    <img key={i} className="w-10 h-10 rounded-full border-2 border-white object-cover" src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="avatar" />
-                                                ))}
                                             </div>
                                             <div>
-                                                <div className="flex text-[#0F3024] text-lg justify-center lg:justify-start">★★★★<span className="text-gray-300">★</span></div>
-                                                <div className="text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-wider">6,000+ happy reviews</div>
+                                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 tracking-wide">Daily Service Window</h3>
+                                                <p className="text-white/70 leading-relaxed text-sm sm:text-base font-medium">Your clothes will always arrive between 8am and 8pm.</p>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="lg:col-span-4 bg-white rounded-[40px] p-6 sm:p-10 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col">
-                                        <h3 className="text-2xl sm:text-3xl font-black text-[#0F3024] mb-2 uppercase tracking-tighter">Pay-As-You-Go</h3>
-                                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-8 pb-8 border-b border-gray-100">{activeService.pricing.payAsYouGo.subtitle}</p>
-                                        <div className="mb-8">
-                                            <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-1">{activeService.pricing.payAsYouGo.prefix}</span>
-                                            <span className="text-4xl sm:text-5xl font-black text-[#0F3024]">{activeService.pricing.payAsYouGo.price}</span>
-                                        </div>
-                                        <ul className="space-y-4 mb-10 flex-1">
-                                            {activeService.pricing.payAsYouGo.features.map((feature, i) => (
-                                                <li key={i} className="text-gray-600 font-bold text-sm sm:text-base flex items-start gap-2">
-                                                    <svg className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                    {feature}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <button className="w-full py-4 sm:py-5 rounded-2xl font-black uppercase tracking-widest text-[#E85D04] border-2 border-[#E85D04] hover:bg-[#E85D04] hover:text-white transition-all shadow-lg shadow-orange-500/5">
-                                            Schedule a pickup
-                                        </button>
-                                    </div>
-
-                                    <div className="lg:col-span-4 bg-[#0F3024] rounded-[40px] p-6 sm:p-10 shadow-2xl flex flex-col relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-4">
-                                            <span className="bg-[#E85D04] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Popular</span>
-                                        </div>
-                                        <h3 className="text-2xl sm:text-3xl font-black text-white mb-2 uppercase tracking-tighter">Rinse Repeat</h3>
-                                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-8 pb-8 border-b border-white/10">{activeService.pricing.subscription.subtitle}</p>
-                                        <div className="mb-8">
-                                            <span className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-1">{activeService.pricing.subscription.prefix}</span>
-                                            <span className="text-4xl sm:text-5xl font-black text-white">{activeService.pricing.subscription.price}</span>
-                                        </div>
-                                        <ul className="space-y-4 mb-10 flex-1">
-                                            {activeService.pricing.subscription.features.map((feature, i) => (
-                                                <li key={i} className="text-white/90 font-bold text-sm sm:text-base flex items-start gap-2">
-                                                    <svg className="w-5 h-5 text-[#E85D04] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                    {feature}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <button className="w-full py-4 sm:py-5 rounded-2xl font-black uppercase tracking-widest text-white bg-[#E85D04] hover:bg-[#d65503] transition-all shadow-xl shadow-orange-600/30">
-                                            Explore Plans
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* IF SERVICE HAS ITEMIZED PRICING (Dry Cleaning & Hang Dry) */}
-                            {activeService.pricing.items && (
-                                <div>
-                                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#0F3024] leading-tight mb-4 text-center">
-                                        Pricing That Fits Your Needs
-                                    </h2>
-                                    <p className="text-lg text-gray-600 mb-12 text-center max-w-2xl mx-auto">
-                                        {activeService.name} items are priced individually. Here are a few common items.
-                                    </p>
-
-                                    <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-gray-200 max-w-5xl mx-auto">
-                                        <div className="grid md:grid-cols-2 gap-x-16 gap-y-6">
-                                            {/* Slices the array based on showAllPricing boolean */}
-                                            {(showAllPricing ? activeService.pricing.items : activeService.pricing.items.slice(0, 6)).map((item, i) => (
-                                                <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-4 hover:bg-gray-50/50 transition-colors rounded-2xl px-3 py-2">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="w-24 h-24 rounded-3xl bg-[#0F3024]/5 flex items-center justify-center p-4">
-                                                            <img src={item.img} alt={item.name} className="w-full h-full object-contain drop-shadow-sm" />
-                                                        </div>
-                                                        <span className="text-gray-700 font-bold text-xl">{item.name}</span>
-                                                    </div>
-                                                    <span className="text-[#0F3024] font-extrabold text-2xl">{item.price}</span>
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 relative p-6 sm:p-4 rounded-3xl sm:rounded-none bg-white/5 sm:bg-transparent border border-white/10 sm:border-transparent group transition-all duration-300 hover:bg-white/[0.03]">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" /></svg>
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 tracking-wide">Real-Time ETA Alert</h3>
+                                                <p className="text-white/70 leading-relaxed text-sm sm:text-base font-medium">We'll email you when service is complete and before arrival.</p>
+                                            </div>
                                         </div>
 
-                                        {/* Toggle button to show/hide remaining items if there are more than 6 */}
-                                        {activeService.pricing.items.length > 6 && (
-                                            <div className="mt-12 flex justify-center">
-                                                <button
-                                                    onClick={() => setShowAllPricing(!showAllPricing)}
-                                                    className="px-10 py-4 rounded-xl font-bold text-[#E85D04] border-2 border-[#E85D04] hover:bg-[#E85D04] hover:text-white transition-all text-lg"
-                                                >
-                                                    {showAllPricing ? 'Hide full pricing' : 'See full pricing'}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* FEES */}
-                    {activeService.fees && activeService.fees.length > 0 && (
-                        <div className="py-16 border-t border-gray-200">
-                            <h2 className="text-4xl font-extrabold text-[#0F3024] mb-8">About our fees</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {activeService.fees.map((fee, idx) => (
-                                    <div key={idx} className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm flex flex-col">
-                                        <div className="flex justify-between items-baseline mb-4">
-                                            <h3 className="text-xl font-bold text-[#0F3024] pr-2">{fee.title}</h3>
-                                            <span className="text-gray-400 font-bold">{fee.price}</span>
-                                        </div>
-                                        <p className="text-gray-500 mb-6 flex-1">{fee.desc}</p>
-
-                                        {fee.freeSub && (
-                                            <div className="bg-[#0F3024]/10 text-[#0F3024] p-4 rounded-xl text-sm font-bold">
-                                                Free for Rinse Repeat subscribers.
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* PICKUP DETAILS */}
-                    {activeService.pickupDetails && activeService.pickupDetails.text && (
-                        <div className="py-16 border-t border-gray-200">
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-[#0F3024] mb-8">Pickup & Delivery details</h2>
-
-                            <div className="grid lg:grid-cols-2 gap-12 items-center">
-                                <div>
-                                    <p className="text-xl text-gray-800 font-medium mb-12">
-                                        {activeService.pickupDetails.text}
-                                    </p>
-
-                                    <div className="bg-white rounded-3xl p-8 md:p-10 border border-gray-200 shadow-sm">
-                                        <h3 className="text-2xl font-bold text-[#0F3024] mb-4">Not available in the evening? No problem!</h3>
-                                        <p className="text-gray-600 mb-8 leading-relaxed">
-                                            {activeService.pickupDetails.subtext}
-                                        </p>
-
-                                        <div className="flex flex-wrap gap-6">
-                                            {[
-                                                { label: 'Front Door', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 001 1m-6 0h6" /> },
-                                                { label: 'Building Reception', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /> },
-                                                { label: 'Other place', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /> }
-                                            ].map((btn, i) => (
-                                                <div key={i} className="flex flex-col items-center gap-3">
-                                                    <div className="w-14 h-14 rounded-full border-2 border-[#0F3024]/20 flex items-center justify-center text-[#0F3024] bg-[#0F3024]/5">
-                                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{btn.icon}</svg>
-                                                    </div>
-                                                    <span className="text-sm font-bold text-[#0F3024]">{btn.label}</span>
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 relative p-6 sm:p-4 rounded-3xl sm:rounded-none bg-white/5 sm:bg-transparent border border-white/10 sm:border-transparent group transition-all duration-300 hover:bg-white/[0.03]">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-2xl bg-white/10 text-white flex items-center justify-center shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 tracking-wide">Live GPS & Order Tracking</h3>
+                                                <p className="text-white/70 leading-relaxed text-sm sm:text-base font-medium">Track your order in real time on our live map.</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden bg-[#e2e8f0]/50 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                                    <span className="text-gray-400 font-bold tracking-widest uppercase text-center px-4">
-                                        [ Insert Delivery Illustration Here ]
-                                    </span>
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 relative p-6 sm:p-4 rounded-3xl sm:rounded-none bg-white/5 sm:bg-transparent border border-white/10 sm:border-transparent group transition-all duration-300 hover:bg-white/[0.03]">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-2xl bg-[#E85D04]/10 text-[#E85D04] flex items-center justify-center shadow-lg transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 tracking-wide">Seamless Handoff</h3>
+                                                <p className="text-white/70 leading-relaxed text-sm sm:text-base font-medium">Meet us at the door, or leave bags with concierge.</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-
+                        </section>
+                    </div>
                 </div>
             </main>
             <Footer />

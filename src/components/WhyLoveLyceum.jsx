@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 
+// 🌟 UPGRADED DATA: Perfectly balanced text lengths (30-31 words each) to prevent layout shifting
 const features = [
     {
         id: 1,
-        title: "World-class customer service",
-        description: "We're obsessed with delivering unmatched customer service. Our dedicated team is always here and strives to ensure your Lyceum experience is both convenient and delightful every time. Email us anytime at care@lyceum.com or text our dedicated line, and a Lyceum Care team member will be there to assist you!",
-        image: "/why-choose-us-illustration.jpg"
+        title: "Uncompromising Concierge Support",
+        description: "Experience uncompromising care with our dedicated client concierge team. From special fabric requests to prompt scheduling adjustments, we ensure every interaction is seamless, discreet, and flawlessly tailored to your lifestyle.",
+        image: "/whylove-illustration-one.jpg"
     },
     {
         id: 2,
-        title: "Make Mom proud",
-        description: "Look sharp without the effort. We handle the meticulous sorting, washing, and folding so your clothes are always returned in pristine, closet-ready condition.",
-        image: "/delivery-pickup-update-illustration.jpg"
+        title: "The Retail-Ready Finish",
+        description: "Step into garments that consistently feel flawlessly brand new. We handle the meticulous sorting, advanced stain removal, and crisp pressing so your wardrobe is always returned in pristine, closet-ready condition.",
+        image: "/whylove-illustration-two.jpg"
     },
     {
         id: 3,
-        title: "Clean clothes at your fingertips",
-        description: "Schedule pickups, track your Valet in real-time, and update your cleaning preferences seamlessly right from your smartphone.",
-        image: "/testimonial-illustration.jpg"
+        title: "Seamless Smart Technology",
+        description: "Discover where premium garment care seamlessly meets modern convenience. Instantly schedule pickups, track your order via live GPS, and update specialized cleaning preferences right from your smartphone with absolute ease.",
+        image: "/whylove-illustration-three.jpg"
     }
 ];
 
@@ -25,26 +26,22 @@ const features = [
 const displayFeatures = [...features, ...features, ...features];
 
 export default function WhyLoveLyceum() {
-    // Start in the middle of our duplicated array (index 3 is the first 'real' slide)
     const [activeIndex, setActiveIndex] = useState(features.length);
     const [isTransitioning, setIsTransitioning] = useState(true);
     const [isNavigating, setIsNavigating] = useState(false);
 
-    // Adjusted Dimensions for better balance
-    const [dimensions, setDimensions] = useState({ active: 580, inactive: 380, gap: 24 });
+    // Refined Dimensions for Perfect Mobile & Desktop Balance
+    const [dimensions, setDimensions] = useState({ active: 600, inactive: 400, gap: 32 });
 
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            if (width < 768) {
-                // Mobile: Active is 80% of screen, Inactive is 75%. Allows next card to "peek"
-                setDimensions({ active: width * 0.8, inactive: width * 0.75, gap: 16 });
+            if (width < 640) {
+                setDimensions({ active: width * 0.85, inactive: width * 0.75, gap: 16 });
             } else if (width < 1024) {
-                // Tablet: Mid-sized balance
-                setDimensions({ active: 450, inactive: 320, gap: 20 });
+                setDimensions({ active: 450, inactive: 320, gap: 24 });
             } else {
-                // Desktop: Narrower active, much wider/taller inactive (3 fit perfectly in 1400px container)
-                setDimensions({ active: 580, inactive: 380, gap: 24 });
+                setDimensions({ active: 600, inactive: 400, gap: 32 });
             }
         };
 
@@ -55,7 +52,7 @@ export default function WhyLoveLyceum() {
 
     // --- SEAMLESS INFINITE LOOP LOGIC ---
     const handleNext = () => {
-        if (isNavigating) return; // Prevent rapid clicking from breaking animation
+        if (isNavigating) return;
         setIsNavigating(true);
         setIsTransitioning(true);
         setActiveIndex(prev => prev + 1);
@@ -79,12 +76,11 @@ export default function WhyLoveLyceum() {
     };
 
     useEffect(() => {
-        // If we slide past the middle duplicate set, silently jump back to the center
         if (activeIndex === features.length * 2) {
             const timeout = setTimeout(() => {
-                setIsTransitioning(false); // Turn off animation
-                setActiveIndex(features.length); // Jump
-            }, 700); // Wait for CSS transition to finish
+                setIsTransitioning(false);
+                setActiveIndex(features.length);
+            }, 700);
             return () => clearTimeout(timeout);
         } else if (activeIndex === features.length - 1) {
             const timeout = setTimeout(() => {
@@ -96,25 +92,27 @@ export default function WhyLoveLyceum() {
     }, [activeIndex]);
 
     useEffect(() => {
-        // Turn transition back on after a silent jump
         if (!isTransitioning) {
             const timeout = setTimeout(() => setIsTransitioning(true), 50);
             return () => clearTimeout(timeout);
         }
     }, [isTransitioning]);
 
-    // The Magic Math offset
     const offset = -(activeIndex * (dimensions.inactive + dimensions.gap));
 
     return (
-        <section className="py-24 bg-white overflow-hidden">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-24 bg-white overflow-hidden border-t border-gray-100">
+            <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
 
                 {/* Section Header */}
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#01411C] tracking-tight">
-                        Why you'll love <span className="text-[#F6921E]">Lyceum</span>
+                <div className="mb-16 max-w-2xl">
+                    <h2 className="text-sm font-bold tracking-widest text-[#E85D04] uppercase mb-4 flex items-center gap-3">
+                        <span className="w-8 h-[2px] bg-[#E85D04]"></span>
+                        The Lyceum Difference
                     </h2>
+                    <h3 className="text-4xl md:text-5xl font-black text-[#0F3024] tracking-tight uppercase leading-[1.1]">
+                        Why You Will <span className="text-[#E85D04]">Love Lyceum</span>
+                    </h3>
                 </div>
 
                 {/* Dynamic Slider Container */}
@@ -140,34 +138,45 @@ export default function WhyLoveLyceum() {
                                         transition: isTransitioning ? 'width 700ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
                                     }}
                                 >
-                                    {/* Image Container - Taller Inactive State */}
+                                    {/* Image Container */}
                                     <div
-                                        className={`w-full overflow-hidden rounded-[2rem] shadow-sm ${isActive
-                                            ? 'h-[380px] md:h-[480px] bg-[#FAF9F6] border border-gray-100'
-                                            : 'h-[320px] md:h-[400px] bg-gray-100 opacity-80 group-hover:opacity-100'
+                                        className={`w-full overflow-hidden rounded-[32px] relative shadow-lg ${isActive
+                                            ? 'h-[400px] md:h-[500px] bg-[#0F3024]/5 border-none shadow-[#0F3024]/10'
+                                            : 'h-[320px] md:h-[400px] bg-gray-100 opacity-60 group-hover:opacity-100'
                                             }`}
                                         style={{
                                             transition: isTransitioning ? 'all 700ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
                                         }}
                                     >
+                                        <div className="absolute inset-0 flex items-center justify-center text-[#0F3024] font-bold text-sm tracking-widest uppercase opacity-50">
+                                            Image {feature.id}
+                                        </div>
+
+                                        {isActive && (
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-[#0F3024]/20 to-transparent z-10 pointer-events-none mix-blend-overlay"></div>
+                                        )}
+
                                         <img
                                             src={feature.image}
                                             alt={feature.title}
-                                            className={`w-full h-full object-cover transition-transform duration-1000 ${isActive ? 'scale-100' : 'scale-105 group-hover:scale-100'}`}
+                                            className={`relative z-10 w-full h-full object-cover transition-transform duration-1000 ${isActive ? 'scale-100' : 'scale-105 group-hover:scale-100'}`}
+                                            onError={(e) => {
+                                                e.target.style.opacity = '0';
+                                            }}
                                         />
                                     </div>
 
                                     {/* Text Content */}
                                     <div className="mt-6 flex flex-col">
                                         <h3
-                                            className={`font-extrabold text-[#01411C] ${isActive ? 'text-3xl md:text-4xl mb-4' : 'text-xl md:text-2xl mt-2'
+                                            className={`font-black text-[#0F3024] uppercase tracking-wide ${isActive ? 'text-2xl md:text-3xl mb-4' : 'text-lg md:text-xl mt-2'
                                                 }`}
                                             style={{ transition: isTransitioning ? 'all 700ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none' }}
                                         >
                                             {feature.title}
                                         </h3>
 
-                                        {/* Expanding Description */}
+                                        {/* 🌟 UPGRADED: Structural lock added here (min-h-[100px]) */}
                                         <div
                                             className="overflow-hidden"
                                             style={{
@@ -176,7 +185,7 @@ export default function WhyLoveLyceum() {
                                                 transition: isTransitioning ? 'all 700ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
                                             }}
                                         >
-                                            <p className="text-gray-700 text-lg leading-relaxed pr-8">
+                                            <p className="text-gray-600 text-base md:text-lg leading-relaxed font-medium pr-4 sm:pr-8 min-h-[110px] xl:min-h-[88px]">
                                                 {feature.description}
                                             </p>
                                         </div>
@@ -188,21 +197,21 @@ export default function WhyLoveLyceum() {
                 </div>
 
                 {/* Navigation Controls */}
-                <div className="flex gap-4 mt-12">
+                <div className="flex gap-4 mt-8 md:mt-12">
                     <button
                         onClick={handlePrev}
                         aria-label="Previous feature"
-                        className="w-14 h-14 rounded-full border-2 border-[#01411C] text-[#01411C] hover:bg-[#01411C] hover:text-white flex items-center justify-center transition-colors duration-300"
+                        className="w-14 h-14 rounded-full bg-[#0F3024]/5 text-[#0F3024] hover:bg-[#0F3024] hover:text-white flex items-center justify-center transition-all duration-300 active:scale-95 shadow-sm"
                     >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                     </button>
 
                     <button
                         onClick={handleNext}
                         aria-label="Next feature"
-                        className="w-14 h-14 rounded-full border-2 border-[#01411C] text-[#01411C] hover:bg-[#01411C] hover:text-white flex items-center justify-center transition-colors duration-300"
+                        className="w-14 h-14 rounded-full bg-[#E85D04] text-white hover:bg-[#cc5203] flex items-center justify-center transition-all duration-300 shadow-lg shadow-orange-500/20 active:scale-95 group"
                     >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                        <svg className="transform group-hover:translate-x-1 transition-transform duration-300" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                     </button>
                 </div>
 

@@ -1,191 +1,144 @@
 import React, { useState, useEffect } from 'react';
 
+// UPGRADED DATA: Premium Copywriting, Brand Colors, and 5-Star Reviews
 const testimonialsData = [
   {
     id: 1,
-    bgColor: '#FEF0E6',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F6921E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 16h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
-    ),
-    text: (
-      <>
-        I've used Lyceum in every city I've lived in and I am OBSESSED.
-        <br /><br />
-        It's so convenient, whatever detergent they use smell amazing, and <span className="font-bold">all of my delivery people have been so friendly.</span>
-        <br /><br />
-        Highly recommend!
-      </>
-    ),
-    author: null,
-    location: null
+    text: "Lyceum has completely changed my weekends. The dry cleaning is flawless, and the fact that I can track the valet arriving on my phone like a premium ride app is incredible. Unmatched service.",
+    author: "Adesuwa E.",
+    location: "GRA Phase 2",
+    rating: 5,
   },
   {
     id: 2,
-    bgColor: '#DEF2FF',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0077B6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v20"/><path d="M14 8h.01"/><path d="M10 8h.01"/><path d="M14 12h.01"/><path d="M10 12h.01"/><path d="M14 16h.01"/><path d="M10 16h.01"/><path d="M10 22v-4h4v4"/></svg>
-    ),
-    text: (
-      <>
-        <span className="font-bold">Lyceum is the best luxury item I ever gave myself.</span> No more up & down the elevator doing loads and loads of laundry.
-        <br /><br />
-        I simply fill my bag and they pick it up and bring it back the next day. The bag literally is about 3 loads of my laundry. <span className="font-bold">Everything comes back clean, smelling fresh and folded nicely.</span>
-      </>
-    ),
-    author: 'Tanya B.',
-    location: 'San Francisco'
+    text: "As a corporate lawyer, my suits need to be impeccably pressed. Their professional ironing service leaves my garments looking retail-ready every single time. It's the only service I trust with my wardrobe.",
+    author: "David O.",
+    location: "Peter Odili Road",
+    rating: 5,
   },
   {
     id: 3,
-    bgColor: '#E6F4C4',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#52796F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><path d="M3 8h18"/><circle cx="12" cy="15" r="4"/><path d="M16 5h.01"/><path d="M18 5h.01"/></svg>
-    ),
-    text: (
-      <>
-        <span className="font-bold">I nominate Lyceum for community service greatness.</span> They transform my dirty clothes and return them clean, folded and smelling great.
-        <br /><br />
-        Keep up the good work. Their professionalism and service deserves an applause and recognition.
-      </>
-    ),
-    author: 'Ronnie Y.',
-    location: 'New York'
+    text: "I sent in a massive pile of heavy duvets and winter coats that my home machine couldn't handle. They came back smelling incredible, perfectly folded, and wrapped like gifts. Highly recommend!",
+    author: "Chika M.",
+    location: "Ada George",
+    rating: 5,
   },
   {
     id: 4,
-    bgColor: '#FFD9DC',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D77A84" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    ),
-    text: (
-      <>
-        This service is amazing.
-        <br /><br />
-        <span className="font-bold">I put my laundry in a bag on my front porch one night and it's back there cleaned and folded the next night.</span>
-        <br /><br />
-        It's magic and worth the cost!
-      </>
-    ),
-    author: 'David D.',
-    location: 'San Francisco'
+    text: "The sheer convenience of the secure handoff is amazing. I leave my laundry bag with my estate concierge, and Lyceum handles the rest. My clothes have never looked better or lasted longer.",
+    author: "Dr. Nnamdi K.",
+    location: "Trans Amadi",
+    rating: 5,
   }
 ];
 
+// Helper component for the 5 stars
+const StarRating = () => (
+  <div className="flex gap-1 mb-6">
+    {[...Array(5)].map((_, i) => (
+      <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#E85D04]">
+        <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+      </svg>
+    ))}
+  </div>
+);
+
 export default function CustomerTestimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [itemsPerView, setItemsPerView] = useState(3);
-  const [isHovered, setIsHovered] = useState(false);
+  const [cardsToShow, setCardsToShow] = useState(1);
 
-  // Determine how many cards to show based on screen size
+  // Handle responsive sizing for the slider
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setItemsPerView(1); // Mobile: 1 card
-      } else if (window.innerWidth < 1024) {
-        setItemsPerView(2); // Tablet: 2 cards
+      if (window.innerWidth >= 1024) {
+        setCardsToShow(3); // lg
+      } else if (window.innerWidth >= 640) {
+        setCardsToShow(2); // sm
       } else {
-        setItemsPerView(3); // Desktop: 3 cards (so the 4th one can slide in!)
+        setCardsToShow(1); // mobile
       }
     };
 
-    handleResize(); // Set initially
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Calculate the maximum index we can slide to
-  const maxIndex = Math.max(0, testimonialsData.length - itemsPerView);
-
-  // Auto-slide effect
-  useEffect(() => {
-    if (isHovered || maxIndex === 0) return; // Pause on hover or if no overflow
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex >= maxIndex ? 0 : prevIndex + 1
-      );
-    }, 4000); // Slides every 4 seconds
-
-    return () => clearInterval(interval);
-  }, [maxIndex, isHovered]);
+  const maxIndex = Math.max(0, testimonialsData.length - cardsToShow);
 
   return (
-    <section className="py-24 relative bg-[#FAF9F6] overflow-hidden">
-      {/* Background illustration — same technique as Testimonials */}
-      <div
-        className="absolute inset-0 pointer-events-none hidden sm:block"
-        style={{
-          backgroundImage: "url('/image-grid-illustration.jpg')",
-          backgroundSize: 'contain',
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'top',
-          opacity: 0.18,
-        }}
-      />
-      {/* Mobile-specific background: full cover so it still adds texture on small screens */}
-      <div
-        className="absolute inset-0 pointer-events-none sm:hidden"
-        style={{
-          backgroundImage: "url('/image-grid-illustration.jpg')",
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center top',
-          opacity: 0.10,
-        }}
-      />
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="text-center mb-12 sm:mb-20">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#01411C] tracking-tight uppercase leading-[1.1]">
-            Hear from customers like you:
+    <section id="reviews" className="w-full bg-slate-50 py-24 relative overflow-hidden border-t border-gray-100">
+
+      {/* 🌟 UPGRADED: Cinematic Blended Background Image */}
+      {/* 🌟 UPGRADED: Cinematic Blended Background Image */}
+      <div className="absolute inset-0 z-0 select-none pointer-events-none">
+        <img
+          src="/lyceum-wardrobe-testimonials.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-70 object-center"
+          aria-hidden="true"
+        />
+        {/* Modern blur overlay: keeps the image visible but softens it so text is readable */}
+        <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[3px]"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20 flex flex-col items-center">
+          <h2 className="text-sm font-bold tracking-widest text-[#E85D04] uppercase mb-4 flex items-center gap-3">
+            <span className="w-8 h-[2px] bg-[#E85D04]"></span>
+            The Lyceum Standard
+            <span className="w-8 h-[2px] bg-[#E85D04]"></span>
           </h2>
+          <h3 className="text-4xl md:text-5xl font-black text-[#0F3024] tracking-tight uppercase leading-[1.1]">
+            What Our Clients Say
+          </h3>
         </div>
 
         {/* Carousel Container */}
-        <div 
-          className="relative overflow-hidden"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {/* Moving Track */}
-          <div 
-            className="flex transition-transform duration-700 ease-in-out"
-            style={{ 
-              transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` 
+        <div className="relative overflow-hidden">
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{
+              transform: `translateX(-${currentIndex * (100 / cardsToShow)}%)`,
             }}
           >
             {testimonialsData.map((testimonial) => (
-              // Each Card Wrapper
-              <div 
-                key={testimonial.id} 
-                className="flex-shrink-0 px-3"
-                style={{ width: `${100 / itemsPerView}%` }}
+              <div
+                key={testimonial.id}
+                className="w-full flex-shrink-0 px-3 sm:px-4"
+                style={{ width: `${100 / cardsToShow}%` }}
               >
-                <div 
-                   className="rounded-[40px] p-6 sm:p-10 flex flex-col h-full transform transition-all duration-300 hover:-translate-y-1 shadow-sm sm:shadow-none"
-                   style={{ backgroundColor: testimonial.bgColor }}
-                >
-                  <div className="h-32 flex items-center justify-center mb-6 bg-white/40 rounded-2xl">
-                    {testimonial.icon}
-                  </div>
+                {/* Premium Card UI */}
+                <div className="bg-white rounded-[32px] p-8 sm:p-10 h-full flex flex-col relative border border-gray-100 shadow-xl shadow-[#0F3024]/5 group hover:-translate-y-1 transition-all duration-300 overflow-hidden">
 
-                  <div className="mb-4">
-                    <svg className="w-10 h-10 text-black/10" fill="currentColor" viewBox="0 0 24 24">
+                  {/* Giant decorative background quote mark */}
+                  <div className="absolute top-4 right-6 text-[#0F3024]/5 group-hover:text-[#E85D04]/5 transition-colors duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                     </svg>
                   </div>
 
-                  <p className="text-gray-800 text-[1.05rem] leading-relaxed flex-grow">
-                    {testimonial.text}
-                  </p>
+                  <div className="relative z-10 flex-grow flex flex-col">
+                    <StarRating />
 
-                  {testimonial.author && (
-                    <div className="mt-8 pt-6 border-t border-black/10">
-                      <p className="font-bold text-[#01411C]">{testimonial.author}</p>
-                      <p className="text-sm text-gray-600">{testimonial.location}</p>
+                    <p className="text-gray-600 text-base sm:text-lg leading-relaxed flex-grow font-medium mb-8">
+                      "{testimonial.text}"
+                    </p>
+
+                    <div className="pt-6 border-t border-gray-100 flex items-center gap-4">
+                      {/* Avatar Placeholder */}
+                      <div className="w-12 h-12 rounded-full bg-[#0F3024]/10 flex items-center justify-center text-[#0F3024] font-bold text-lg">
+                        {testimonial.author.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[#0F3024] text-sm uppercase tracking-wide">{testimonial.author}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-wider uppercase mt-0.5">{testimonial.location}</p>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
                 </div>
               </div>
             ))}
@@ -194,17 +147,16 @@ export default function CustomerTestimonials() {
 
         {/* Clickable Pagination Dots */}
         {maxIndex > 0 && (
-          <div className="flex justify-center items-center gap-4 mt-12 sm:mt-16">
+          <div className="flex justify-center items-center gap-3 mt-12 sm:mt-16">
             {Array.from({ length: maxIndex + 1 }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`transition-all duration-300 rounded-full ${
-                  currentIndex === index 
-                    ? 'w-10 h-3 bg-[#01411C]' 
-                    : 'w-4 h-4 bg-gray-200 hover:bg-gray-400'
-                }`}
                 aria-label={`Go to slide ${index + 1}`}
+                className={`transition-all duration-300 rounded-full h-2.5 ${currentIndex === index
+                  ? 'w-10 bg-[#E85D04]' // Active state: Long orange pill
+                  : 'w-2.5 bg-gray-300 hover:bg-gray-400' // Inactive state: Small gray circle
+                  }`}
               />
             ))}
           </div>

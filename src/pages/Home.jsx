@@ -12,7 +12,7 @@ import GuaranteeBackground from '../components/GuaranteeBackground';
 import Footer from '../components/Footer';
 
 
-export default function Home() {
+export default function Home({ onOpenAuth }) {
   return (
     // <div className="bg-white min-h-screen font-sans text-lyceum-dark">
     <div className="w-full min-h-screen">
@@ -26,7 +26,7 @@ export default function Home() {
       <About />
 
       {/* Services Section */}
-      <Services />
+      <Services onOpenAuth={onOpenAuth} />
       {/* HowItWorks Section */}
       <HowItWorks />
       {/* DeliveryUpdates Section */}

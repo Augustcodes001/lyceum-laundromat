@@ -1,38 +1,41 @@
 import { useState } from 'react';
 
-export default function Services() {
+export default function Services({ onOpenAuth }) {
   const [activeService, setActiveService] = useState(null);
 
   const servicesData = [
     {
-      id: "wash-up",
-      title: "WASH UP",
-      shortDesc: "Kitchen cleaning, dishes, and large pots.",
-      longDesc: "Our comprehensive 'Wash Up' service tackles the heart of your home. We handle all kitchen cleaning needs, from soaking encrusted pots to scrubbing dishes so spotless they shine. Experience a flawlessly clean kitchen without lifting a finger.",
+      id: "washing",
+      title: "WASHING",
+      shortDesc: "Clothes, duvets, rugs, pillows, and shoes cleaned with care.",
+      longDesc: "Our dedicated 'Washing' service handles your heavy-duty laundry with ease. We specialize in cleaning bulky items that are too large or delicate for a standard home machine. From fluffy duvets and cozy center rugs to bed pillows and everyday shoes, we ensure every fiber is deeply cleaned and refreshed. Your items are returned fresh, clean, and ready to be put away.",
+      image: "/washing-illustration.png", // 🌟 Drop your new image here
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-lyceum-green mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#0F3024] group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       )
     },
     {
-      id: "washing",
-      title: "WASHING",
-      shortDesc: "Laundry, ironing, and fabric care.",
-      longDesc: "From delicate fabrics to heavy winter coats, our 'Washing' tier provides standard-setting laundry service. We utilize eco-friendly detergents in high-end front-loading washers, finishing every garment with a crisp iron for a sharp, flawless look.",
+      id: "ironing",
+      title: "PROFESSIONAL IRONING",
+      shortDesc: "Crisp, professional pressing for your ready-to-wear garments.",
+      longDesc: "Experience the crisp perfection of our professional 'Ironing' service. We focus exclusively on pressing your garments to a pristine, retail-ready finish. Whether it’s a delicate silk blouse or a structured cotton dress shirt, our team uses industry-grade equipment to eliminate every crease and wrinkle. This service is ideal for clothes you have already washed at home but need that flawless, sharp look for the workweek or a special occasion.",
+      image: "/ironing-illustration.png", // 🌟 Drop your new image here
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-lyceum-green mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#0F3024] group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
         </svg>
       )
     },
     {
-      id: "cleaning",
-      title: "CLEANING",
-      shortDesc: "Floors, vacuums, and general room chores.",
-      longDesc: "Reclaim your weekend with our general 'Cleaning' service. We vacuum deep carpets, mop hard floors thoroughly, and cover standard household chores so you get to return to a completely refreshed, inviting environment every day.",
+      id: "dry-cleaning",
+      title: "DRY CLEANING",
+      shortDesc: "Washing, expert stain removal, ironing, and neat packaging.",
+      longDesc: "Choose our all-inclusive 'Dry Cleaning' experience for the ultimate fabric care package. This comprehensive solution combines three steps: professional washing to lift dirt, targeted stain removal for difficult spots, and expert ironing for a smooth finish. The experience is completed with our signature neat packaging—each garment is folded or hung with care, wrapped to prevent wrinkles, and delivered in a condition that means you can wear it straight away.",
+      image: "/dry-cleaning-illustration.png", // 🌟 Drop your new image here
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-lyceum-green mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-[#0F3024] group-hover:text-white transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A4 4 0 002 9.259V18a2 2 0 002 2h16a2 2 0 002-2v-8.741a4 4 0 00-5.248-3.091z" />
         </svg>
       )
@@ -40,85 +43,121 @@ export default function Services() {
   ];
 
   return (
-    <section id="services" className="w-full bg-lyceum-light py-24 relative">
+    <section id="services" className="w-full bg-[#0F3024]/[0.02] py-24 border-t border-[#0F3024]/10 relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
 
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-20">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-lyceum-green tracking-tight uppercase leading-[1.1]">
-            Our Core Services
+        {/* 🌟 UPGRADED: Section Header to match About.jsx */}
+        <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20 flex flex-col items-center">
+          <h2 className="text-sm font-bold tracking-widest text-[#E85D04] uppercase mb-4 flex items-center gap-3">
+            <span className="w-8 h-[2px] bg-[#E85D04]"></span>
+            What We Do
+            <span className="w-8 h-[2px] bg-[#E85D04]"></span>
           </h2>
+          <h3 className="text-4xl md:text-5xl font-black text-[#0F3024] tracking-tight uppercase leading-[1.1]">
+            Our Core Services
+          </h3>
         </div>
 
-        {/* 3-Column Grid */}
+        {/* 🌟 UPGRADED: 3-Column Grid with Hover Micro-Interactions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {servicesData.map((service) => (
             <div
               key={service.id}
-              className="bg-white rounded-[32px] p-6 sm:p-8 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100"
+              className="group bg-white rounded-[32px] p-8 flex flex-col items-center text-center shadow-sm hover:shadow-2xl hover:shadow-[#0F3024]/10 transition-all duration-500 border border-gray-100 hover:-translate-y-2"
             >
-              {service.icon}
-              <h3 className="text-2xl font-bold text-lyceum-green mb-3 uppercase tracking-wide">
+              {/* Animated Icon Circle */}
+              <div className="w-20 h-20 rounded-full bg-[#0F3024]/5 group-hover:bg-[#0F3024] flex items-center justify-center mb-6 transition-colors duration-500">
+                {service.icon}
+              </div>
+
+              <h3 className="text-2xl font-black text-[#0F3024] mb-4 uppercase tracking-wide">
                 {service.title}
               </h3>
-              <p className="text-gray-500 mb-8 text-sm">
+
+              <p className="text-gray-500 mb-10 text-sm leading-relaxed px-2">
                 {service.shortDesc}
               </p>
 
+              {/* Animated Read More Button */}
               <button
                 onClick={() => setActiveService(service)}
-                className="mt-auto bg-lyceum-orange hover:bg-orange-500 text-white font-black text-xs tracking-[0.2em] uppercase py-4 sm:py-3 px-6 rounded-2xl shadow-xl shadow-orange-500/20 transition-all w-full active:scale-95 translate-y-0 hover:-translate-y-1"
+                className="mt-auto flex items-center justify-center gap-2 bg-[#E85D04] hover:bg-[#cc5203] text-white font-bold text-xs tracking-[0.2em] uppercase py-4 px-6 rounded-2xl shadow-lg shadow-orange-500/20 transition-all w-full active:scale-95 group/btn"
               >
                 Read More
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Interactive Modal / Bottom Sheet */}
+      {/* 🌟 UPGRADED: Interactive Modal / Bottom Sheet */}
       {activeService && (
-        <div className="fixed inset-0 z-[100] flex animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200">
+
           {/* Dark Semi-transparent Overlay */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-[#0F3024]/80 backdrop-blur-sm transition-opacity"
             onClick={() => setActiveService(null)}
           ></div>
 
-          {/* Modal Container: Slide-up on Mobile, Centered on Desktop */}
-          <div className="relative z-[101] bg-white w-full max-w-lg mx-auto sm:h-fit mt-auto md:mt-auto md:my-auto md:rounded-[40px] rounded-t-[40px] p-8 sm:p-10 flex flex-col shadow-2xl animate-slide-up md:animate-zoom-in border-t sm:border border-gray-100">
+          {/* Modal Container */}
+          <div className="relative z-[101] bg-white w-full max-w-lg mx-auto h-[90vh] sm:h-auto sm:max-h-[90vh] mt-auto sm:mt-0 sm:rounded-[32px] rounded-t-[32px] flex flex-col shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300 overflow-hidden">
 
-            {/* Close Button */}
+            {/* Close Button (Floating over image) */}
             <button
               onClick={() => setActiveService(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-lyceum-green bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors"
+              className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md text-[#0F3024] hover:bg-white hover:text-red-500 rounded-full p-2 transition-all shadow-lg"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
+            {/* High-End Edge-to-Edge Image Header */}
+            <div className="w-full h-56 sm:h-64 bg-gray-200 relative">
+              {/* Note: Until you add the real images, this acts as a gorgeous dark green placeholder 
+                  Just make sure to replace the src={activeService.image} when ready!
+               */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#0F3024] to-[#1a4f3d]"></div>
+              <img
+                src={activeService.image}
+                alt={activeService.title}
+                className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"
+                onError={(e) => e.target.style.display = 'none'} // Hides broken image icon if no image exists yet
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent"></div>
+            </div>
+
             {/* Modal Body */}
-            <h3 className="text-3xl font-bold text-lyceum-green mb-4 pr-10 uppercase tracking-tight">
-              {activeService.title}
-            </h3>
+            <div className="px-8 pb-8 pt-2 flex flex-col flex-1 overflow-y-auto">
+              <h3 className="text-3xl font-black text-[#0F3024] mb-4 uppercase tracking-tight">
+                {activeService.title}
+              </h3>
 
-            {/* Illustration Placeholder */}
-            <div className="w-full h-48 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl mb-6 flex items-center justify-center text-gray-400">
-              <span className="text-sm font-medium">Illustration Placeholder</span>
+              <div className="prose prose-sm text-gray-600 mb-8">
+                <p className="leading-relaxed text-base">
+                  {activeService.longDesc}
+                </p>
+              </div>
+
+              {/* 🌟 UPGRADED: Action CTA triggers Auth Modal */}
+              <button
+                onClick={() => {
+                  setActiveService(null);
+                  if (onOpenAuth) onOpenAuth();
+                }}
+                className="mt-auto flex items-center justify-center gap-2 w-full bg-[#0F3024] hover:bg-[#1a4f3d] text-white font-bold text-xs tracking-[0.2em] uppercase py-5 rounded-2xl shadow-xl shadow-[#0F3024]/30 transition-all active:scale-95 group/btn"
+              >
+                Schedule This Service
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
             </div>
 
-            {/* Detailed Description */}
-            <div className="prose prose-sm text-gray-600 mb-8">
-              <p className="leading-relaxed">
-                {activeService.longDesc}
-              </p>
-            </div>
-
-            {/* Action CTA */}
-            <button className="w-full bg-[#0F3024] text-white font-black text-xs tracking-[0.2em] uppercase py-5 rounded-2xl shadow-2xl shadow-[#0F3024]/30 transition-all mt-auto active:scale-95">
-              Schedule This Service
-            </button>
           </div>
         </div>
       )}

@@ -94,9 +94,9 @@ function AppContent() {
 
   if (isAuthChecking) {
     return (
-        <div className="min-h-screen bg-[#0F3024] flex items-center justify-center">
-            <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full animate-pulse" />
-        </div>
+      <div className="min-h-screen bg-[#0F3024] flex items-center justify-center">
+        <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full animate-pulse" />
+      </div>
     );
   }
 
@@ -107,6 +107,7 @@ function AppContent() {
       {isSplashLoading && (
         <div className="fixed inset-0 bg-[#0F3024] z-[10000] flex flex-col items-center justify-center">
           <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full animate-pulse" />
+          {/* <p className="text-white">Actions and discipline</p> */}
         </div>
       )}
 
@@ -147,7 +148,7 @@ function AppContent() {
       {/* We wrap the routes in a layout container. (Uses our new showSidebar variable) */}
       <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home onOpenAuth={() => setIsAuthModalOpen(true)} />} />
           <Route path="/pricing" element={<ServicesPricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
@@ -197,7 +198,7 @@ function AppContent() {
           onLoginSuccess={handleLoginSuccess}
         />
       )}
-      
+
       {showUserLayout && <SupportWidget />}
     </div>
   );
