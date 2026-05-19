@@ -149,7 +149,17 @@ function AppContent() {
       <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
         <Routes>
           <Route path="/" element={<Home onOpenAuth={() => setIsAuthModalOpen(true)} />} />
-          <Route path="/pricing" element={<ServicesPricing />} />
+          <Route 
+  path="/pricing" 
+  element={
+    <ServicesPricing 
+      onOpenAuth={(route) => {
+        setPendingRoute(route);
+        setIsAuthModalOpen(true);
+      }} 
+    />
+  } 
+/>
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/track" element={<Track />} />

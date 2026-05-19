@@ -1,7 +1,56 @@
-// src/components/Footer.jsx
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsSubmitting(true);
+    setStatusMessage('');
+
+    try {
+      // 1. Save to newsletter_subscribers
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email,
+        subscribedAt: serverTimestamp()
+      });
+
+      // 2. Send email via Web3Forms
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
+          subject: "New Newsletter Subscriber!",
+          from_name: "Lyceum App",
+          email: email,
+          message: `You have a new newsletter subscriber: ${email}`
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Web3Forms delivery failed");
+      }
+
+      setStatusMessage('success');
+      setEmail('');
+    } catch (error) {
+      console.error("Error subscribing: ", error);
+      setStatusMessage('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // 🌟 UPGRADED: Perfectly synced with SocialFollowModal.jsx icons and links!
   const socialLinks = [
@@ -139,14 +188,38 @@ export default function Footer() {
             <p className="text-sm font-medium text-gray-400 mb-6">
               Get the latest updates, promotions, and cleaning tips sent securely to your inbox.
             </p>
-            <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+            <form className="flex flex-col gap-3" onSubmit={handleSubscribe}>
+              {statusMessage === 'success' ? (
+                <div className="bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl px-4 py-3.5 text-sm text-center">
+                  Thanks for subscribing! Check your email.
+                </div>
+              ) : statusMessage === 'error' ? (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3.5 text-sm text-center">
+                  Something went wrong. Please try again.
+                </div>
+              ) : null}
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#E85D04] focus:bg-white/10 transition-all duration-300 placeholder-gray-500"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isSubmitting}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-[#E85D04] focus:bg-white/10 transition-all duration-300 placeholder-gray-500 disabled:opacity-50"
               />
-              <button className="w-full bg-[#E85D04] hover:bg-[#cc5203] text-white font-bold text-sm tracking-widest uppercase py-3.5 rounded-xl shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition-all duration-300 active:scale-95">
-                Subscribe
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-[#E85D04] hover:bg-[#cc5203] text-white font-bold text-sm tracking-widest uppercase py-3.5 rounded-xl shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 transition-all duration-300 active:scale-95 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  "Subscribe"
+                )}
               </button>
             </form>
           </div>

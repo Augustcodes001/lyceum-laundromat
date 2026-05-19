@@ -1,13 +1,75 @@
 import { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
   useEffect(() => {
     const handleOpenSupport = () => setIsOpen(true);
     window.addEventListener('openSupport', handleOpenSupport);
 
     return () => window.removeEventListener('openSupport', handleOpenSupport);
   }, []);
+
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !message) return;
+
+    setIsSubmitting(true);
+    setStatusMessage('');
+
+    try {
+      // 1. Save to support_tickets
+      await addDoc(collection(db, 'support_tickets'), {
+        email,
+        message,
+        status: 'open',
+        createdAt: serverTimestamp()
+      });
+
+      // 2. Send email via Web3Forms
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
+          subject: "New Support Ticket from Lyceum App",
+          from_name: "Lyceum Support Widget",
+          email: email,
+          message: message,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Web3Forms delivery failed");
+      }
+
+      setStatusMessage('success');
+      setEmail('');
+      setMessage('');
+      
+      // Auto-close after a few seconds
+      setTimeout(() => {
+        setIsOpen(false);
+        setStatusMessage('');
+      }, 4000);
+
+    } catch (error) {
+      console.error("Error submitting support request: ", error);
+      setStatusMessage('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[200] flex flex-col items-end transition-all duration-300">
  
@@ -53,24 +115,49 @@ export default function SupportWidget() {
             </div>
 
             {/* Email Form */}
-            <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); alert("Message logic goes here!"); }}>
+            <form className="flex flex-col gap-3" onSubmit={handleSupportSubmit}>
+              {statusMessage === 'success' && (
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm text-center">
+                  Message sent successfully! We'll be in touch.
+                </div>
+              )}
+              {statusMessage === 'error' && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm text-center">
+                  Failed to send message. Please try again.
+                </div>
+              )}
+              
               <input
                 type="email"
                 placeholder="Your email address"
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F3024] focus:border-transparent transition-all"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F3024] focus:border-transparent transition-all disabled:opacity-50"
                 required
+                disabled={isSubmitting}
               />
               <textarea
                 placeholder="How can we help you?"
                 rows="3"
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F3024] focus:border-transparent resize-none transition-all"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F3024] focus:border-transparent resize-none transition-all disabled:opacity-50"
                 required
+                disabled={isSubmitting}
               ></textarea>
               <button
                 type="submit"
-                className="w-full bg-[#E85D04] hover:bg-[#d45203] text-white py-3 rounded-lg font-bold text-sm transition-colors mt-1"
+                disabled={isSubmitting}
+                className="w-full bg-[#E85D04] hover:bg-[#d45203] text-white py-3 rounded-lg font-bold text-sm transition-colors mt-1 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Send Message
+                {isSubmitting ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  "Send Message"
+                )}
               </button>
             </form>
           </div>
@@ -91,11 +178,4 @@ export default function SupportWidget() {
         ) : (
           /* Support Bubble Icon */
           <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        )}
-      </button>
-
-    </div>
-  );
-}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.8
