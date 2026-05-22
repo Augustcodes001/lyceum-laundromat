@@ -24,7 +24,7 @@ export default function BottomNav({ onOpenAuth, isLoggedIn, onPromptLogout }) {
     const navItems = isLoggedIn ? loggedInItems : loggedOutItems;
 
     return (
-        <div className={`sm:hidden fixed bottom-0 left-0 right-0 border-t pb-safe z-50 transition-colors duration-300 ${isLoggedIn
+        <div className={`lg:hidden fixed bottom-0 left-0 right-0 border-t pb-safe z-50 transition-colors duration-300 ${isLoggedIn
             ? 'bg-[#0F3024] border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]'
             : 'bg-white border-gray-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]'
             }`}>

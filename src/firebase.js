@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserSessionPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // This pulls your hidden keys from the .env.local file
@@ -11,8 +11,13 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
-
-// Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+// 🌟 FIX: Force session to clear when tab/window closes
+setPersistence(auth, browserSessionPersistence)
+  .catch((error) => {
+    console.error("Error setting auth persistence:", error);
+  });
+// Initialize Firebase
+
 export const db = getFirestore(app);

@@ -40,6 +40,10 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userProfile, setUserProfile] = useState(null);
     const [reviewedOrders, setReviewedOrders] = useState(new Set());
+    const [dismissedReviews, setDismissedReviews] = useState(() => {
+        const saved = localStorage.getItem('lyceum_dismissed_reviews');
+        return saved ? JSON.parse(saved) : [];
+    });
 
     useEffect(() => {
         // Deep Link Auth Check
@@ -115,6 +119,20 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
         setTimeout(() => setCopySuccessId(null), 2000);
     };
 
+    const unreviewedOrder = historyOrders.find(o => !reviewedOrders.has(o.id) && !dismissedReviews.includes(o.id));
+
+    const handleDismissReview = (orderId) => {
+        const next = [...dismissedReviews, orderId];
+        setDismissedReviews(next);
+        localStorage.setItem('lyceum_dismissed_reviews', JSON.stringify(next));
+    };
+
+    const handleOpenProactiveReview = (order) => {
+        setSelectedOrder(order);
+        // Add a slight delay to allow modal animation to mount
+        setTimeout(() => setIsReviewExpanded(true), 300);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-28 font-sans">
             <div className="bg-[#0F3024] pt-12 pb-6 px-6 shadow-sm sticky top-0 z-30">
@@ -141,6 +159,36 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                         <button onClick={() => navigate('/user-pricing')} className="bg-[#E85D04] text-white px-8 py-4 rounded-2xl font-bold shadow-[0_4px_15px_rgba(232,93,4,0.3)] w-full">Start an Order</button>
                     </div>
                 ) : null}
+
+                {/* ── PROACTIVE REVIEW BANNER ── */}
+                {unreviewedOrder && (
+                    <div className="mb-6 bg-gradient-to-r from-[#0F3024] to-[#1a4a38] rounded-[24px] p-5 shadow-lg relative overflow-hidden animate-in slide-in-from-top-4 fade-in">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-[#E85D04] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(232,93,4,0.5)]">
+                                <Star className="w-6 h-6 text-white fill-white" />
+                            </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <h4 className="text-white font-black text-lg">How was your laundry?</h4>
+                                <p className="text-white/80 text-sm font-medium mt-0.5">You recently received Order {unreviewedOrder.id}. Share your experience and help our community grow!</p>
+                            </div>
+                            <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                <button 
+                                    onClick={() => handleDismissReview(unreviewedOrder.id)}
+                                    className="px-4 py-2.5 rounded-xl font-bold text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    Dismiss
+                                </button>
+                                <button 
+                                    onClick={() => handleOpenProactiveReview(unreviewedOrder)}
+                                    className="px-5 py-2.5 bg-white text-[#0F3024] rounded-xl font-black shadow-md hover:scale-105 transition-transform"
+                                >
+                                    Rate Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── ACTIVE ORDERS ── */}
                 {activeOrders.length > 0 && (

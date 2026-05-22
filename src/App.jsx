@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -49,12 +50,18 @@ function AppContent() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation(); // 👈 We use this to check what page we are on!
+  const location = useLocation();
 
-  // 🛑 Dynamic Layout Logic
+  // 🌟 FIX: Strict Layout Logic
+  // Define all public pages where the sidebar should NEVER show
+  const publicRoutes = ['/', '/pricing', '/privacy', '/terms', '/reset-password', '/order-success'];
+  
   const isHomePage = location.pathname === '/';
+  const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/track');
   const isAdminPath = location.pathname.startsWith('/admin');
-  const showSidebar = isLoggedIn && !isHomePage && !isAdminPath; // Only show user sidebar if logged in, not on home, and NOT on admin
+  
+  // Show sidebar ONLY if logged in, NOT on a public route, and NOT on admin
+  const showSidebar = isLoggedIn && !isPublicRoute && !isAdminPath; 
   const showUserLayout = !isAdminPath;
 
   useEffect(() => {
@@ -72,7 +79,6 @@ function AppContent() {
     setTimeout(() => {
       setIsSplashLoading(false);
 
-      // If they tried to click a restricted link before logging in, send them there. Otherwise, Dashboard!
       if (pendingRoute) {
         navigate(pendingRoute);
         setPendingRoute(null);
@@ -107,7 +113,6 @@ function AppContent() {
       {isSplashLoading && (
         <div className="fixed inset-0 bg-[#0F3024] z-[10000] flex flex-col items-center justify-center">
           <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full animate-pulse" />
-          {/* <p className="text-white">Actions and discipline</p> */}
         </div>
       )}
 
@@ -135,31 +140,28 @@ function AppContent() {
         </div>
       )}
 
-      {/* Show Header if logged out, OR if we are on the Home Page (But never on Admin pages) */}
-      {showUserLayout && (!isLoggedIn || isHomePage) && (
-        <Header
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-        />
+      {/* Header logic adjusted to show on public routes, not just home */}
+      {showUserLayout && (!isLoggedIn || isPublicRoute) && (
+        <Header onOpenAuth={() => setIsAuthModalOpen(true)} isLoggedIn={isLoggedIn} onLogout={() => setIsLogoutModalOpen(true)} />
       )}
 
-      {/* 🚀 NEW DESKTOP SIDEBAR (Uses our new showSidebar variable) */}
+      {/* 🚀 NEW DESKTOP SIDEBAR */}
       {showSidebar && <Sidebar onPromptLogout={() => setIsLogoutModalOpen(true)} />}
 
-      {/* We wrap the routes in a layout container. (Uses our new showSidebar variable) */}
       <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
         <Routes>
           <Route path="/" element={<Home onOpenAuth={() => setIsAuthModalOpen(true)} />} />
           <Route 
-  path="/pricing" 
-  element={
-    <ServicesPricing 
-      onOpenAuth={(route) => {
-        setPendingRoute(route);
-        setIsAuthModalOpen(true);
-      }} 
-    />
-  } 
-/>
+            path="/pricing" 
+            element={
+              <ServicesPricing 
+                onOpenAuth={(route) => {
+                  setPendingRoute(route);
+                  setIsAuthModalOpen(true);
+                }} 
+              />
+            } 
+          />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/track" element={<Track />} />
@@ -189,8 +191,8 @@ function AppContent() {
         </Routes>
       </div>
 
-      {/* MOBILE BOTTOM NAV (User Portal only) */}
-      {showUserLayout && (
+      {/* MOBILE BOTTOM NAV */}
+      {showUserLayout && showSidebar && (
         <BottomNav
           onOpenAuth={(route) => {
             setPendingRoute(route);
@@ -214,7 +216,6 @@ function AppContent() {
   );
 }
 
-// 🛑 THIS IS REQUIRED SO MAIN.JSX CAN FIND THE COMPONENT
 export default function App() {
   return (
     <Router>

@@ -1,7 +1,7 @@
 // src/components/Header.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import PickupPill from './PickupPill'; // 🌟 Import shared PickupPill
+import PickupPill from './PickupPill'; 
 
 // ── Desktop Nav Link ──
 const NavLink = ({ to, children }) => (
@@ -31,38 +31,32 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
 
-  // Helper to navigate to homepage sections from anywhere
+  // 🌟 FIX: Smarter Navigation Logic
   const navigateToSection = (sectionId) => {
-    if (location.pathname !== '/') {
-      // Not on homepage: navigate to "/" with hash
-      navigate(`/#${sectionId}`);
-    } else {
-      // Already on homepage: scroll smoothly
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-    // Close mobile menu if open
-    setIsHamburgerOpen(false);
+    setIsHamburgerOpen(false); // Close mobile menu first
+    navigate(`/#${sectionId}`); // Force router to hit the hash, which triggers useEffect
   };
 
-  // Handle hash scrolling when arriving on homepage with a hash
+  // 🌟 FIX: Flawless Hash Scrolling that accounts for Fixed Header Height
   useEffect(() => {
-    if (location.pathname === '/' && location.hash) {
+    if (location.hash) {
       const id = location.hash.replace('#', '');
+      // Slight delay ensures the DOM has painted the target page completely
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          // Adjust scroll minus 80px so the header doesn't cover the title!
+          const yOffset = element.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: yOffset, behavior: 'smooth' });
         }
-      }, 100);
+      }, 150);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [location]);
 
   return (
     <>
-      {/* Spacer for fixed header */}
       <div className="h-[72px] w-full bg-white hidden sm:block"></div>
 
       <header className="fixed top-0 left-0 w-full z-[100] bg-white/95 backdrop-blur-md border-b border-gray-200 app-element">
@@ -74,69 +68,68 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
               <img
                 src="/Lyceum-official-logo.jpg"
                 alt="Lyceum Laundromat"
-                className="h-10 md:h-12 w-auto object-contain"
+                className="h-9 sm:h-10 md:h-12 w-auto object-contain"
               />
             </Link>
 
             {/* DESKTOP NAVIGATION */}
             <nav className="hidden lg:flex items-center space-x-1">
               <NavLink to="/">Home</NavLink>
-
-              {/* About Link (now using button + navigateToSection) */}
               <button
                 onClick={() => navigateToSection('about')}
                 className="relative flex items-center px-4 py-2 rounded-full text-[16px] font-[500] tracking-[-0.01em] text-[#0F3024] transition-all hover:text-[#E85D04] hover:bg-[#0F3024]/[0.06]"
               >
                 About
               </button>
-
-              {/* Delivery Link */}
               <button
                 onClick={() => navigateToSection('delivery-updates')}
                 className="relative flex items-center px-4 py-2 rounded-full text-[16px] font-[500] tracking-[-0.01em] text-[#0F3024] transition-all hover:text-[#E85D04] hover:bg-[#0F3024]/[0.06]"
               >
                 Delivery
               </button>
-
               <NavLink to="/pricing">Services/Pricing</NavLink>
             </nav>
 
             {/* DESKTOP RIGHT SIDE */}
-            <div className="hidden lg:flex items-center space-x-6">
-              {/* 🌟 Replaced DesktopPickupPill with shared PickupPill */}
-              <PickupPill onOpenAuth={onOpenAuth} />
+            <div className="hidden lg:flex items-center gap-4 xl:gap-6">
+              <div className="hidden xl:block transform scale-[0.85] origin-right w-[340px]">
+                 <PickupPill onOpenAuth={onOpenAuth} />
+              </div>
 
               {/* Desktop Auth Buttons */}
-                 <div className="hidden lg:flex items-center gap-6 ml-4">
-                {/* <button
-                  onClick={() => onOpenAuth()}
-                  className="text-[#0F3024] font-bold hover:text-[#E85D04] transition-colors"
-                >
-                  Log In
-                </button> */}
-                <button
-                  onClick={() => onOpenAuth()}
-                  className="flex items-center justify-center bg-[#0F3024] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#1a4a38] transition-colors shadow-md"
-                >
-                  Log In
-                </button>
+              <div className="flex items-center gap-4">
+                {isLoggedIn ? (
+                  <button
+                    onClick={onLogout}
+                    className="flex items-center justify-center border border-gray-200 text-[#0F3024] px-6 py-2 rounded-full font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                  >
+                    Log Out
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onOpenAuth()}
+                    className="flex items-center justify-center bg-[#0F3024] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#1a4a38] transition-colors shadow-md whitespace-nowrap"
+                  >
+                    Log In
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* TABLET & MOBILE RIGHT SIDE */}
-            <div className="flex lg:hidden items-center space-x-1 sm:space-x-2">
+            {/* 🌟 FIX: TABLET & MOBILE RIGHT SIDE RESPONSIVENESS */}
+            <div className="flex lg:hidden items-center gap-1 sm:gap-2">
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openSupport'))}
-                className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 sm:p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors"
                 title="Support"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z" />
                   <path d="M21 16v2a4 4 0 0 1-4 4h-5" />
                 </svg>
               </button>
 
-              <button onClick={() => setIsLocationModalOpen(true)} className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors">
+              <button onClick={() => setIsLocationModalOpen(true)} className="p-1.5 sm:p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors hidden sm:block">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -145,18 +138,18 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
 
               {/* MOBILE AUTH PILL */}
               {isLoggedIn ? (
-                <button onClick={onLogout} className="bg-gray-100 text-[#0F3024] border border-gray-200 px-4 py-2 rounded-full text-sm font-semibold shadow-sm mx-1 hover:bg-gray-200 transition-colors hidden sm:block">
+                <button onClick={onLogout} className="bg-gray-100 text-[#0F3024] border border-gray-200 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-gray-200 transition-colors hidden md:block whitespace-nowrap">
                   Log out
                 </button>
               ) : (
-                <button onClick={() => onOpenAuth()} className="bg-[#0F3024] text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm mx-1 hover:bg-[#1a4a38] transition-colors hidden sm:block">
+                <button onClick={() => onOpenAuth()} className="bg-[#0F3024] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-[#1a4a38] transition-colors whitespace-nowrap">
                   Log in
                 </button>
               )}
 
               {/* TAPERED HAMBURGER ICON */}
-              <button onClick={() => setIsHamburgerOpen(true)} className="p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors">
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <button onClick={() => setIsHamburgerOpen(true)} className="p-1.5 sm:p-2 text-[#0F3024] hover:bg-gray-100 rounded-full transition-colors">
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 6h16M4 12h12M4 18h8" />
                 </svg>
               </button>
@@ -166,7 +159,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
         </div>
       </header>
 
-      {/* PREMIUM WHITE SLIDE-OUT DRAWER (Slides from Right) */}
+      {/* PREMIUM WHITE SLIDE-OUT DRAWER */}
       <div
         className={`fixed inset-0 bg-black/40 z-[200] transition-opacity duration-300 lg:hidden ${isHamburgerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsHamburgerOpen(false)}
@@ -175,7 +168,6 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
       <div
         className={`fixed top-0 right-0 h-full w-[85%] max-w-[340px] bg-white z-[201] shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${isHamburgerOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        {/* Drawer Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="h-8 w-auto object-contain" />
           <button onClick={() => setIsHamburgerOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-500 hover:bg-gray-100">
@@ -185,9 +177,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
           </button>
         </div>
 
-        {/* Drawer Content */}
         <div className="flex flex-col flex-1 overflow-y-auto p-6">
-          {/* Navigation Links */}
           <nav className="flex flex-col space-y-5 mb-8">
             <Link
               to="/"
@@ -221,24 +211,6 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
           </nav>
 
           <div className="h-px bg-gray-100 w-full mb-8"></div>
-
-          {/* Location Field inside Menu */}
-          {/* <div className="mb-6">
-            <label className="block text-xs font-extrabold uppercase tracking-widest text-[#0F3024] mb-2">Delivery Location</label>
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 flex items-center shadow-inner">
-              <svg className="w-5 h-5 text-[#E85D04] mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Enter address..."
-                value={mobileAddress}
-                onChange={(e) => setMobileAddress(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-[15px] text-[#0F3024] placeholder-gray-400"
-              />
-            </div>
-          </div> */}
 
           {/* MOBILE HAMBURGER MENU AUTH BUTTONS */}
           <div className="mt-12 pt-4 flex flex-col space-y-3">

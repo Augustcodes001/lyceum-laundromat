@@ -16,6 +16,34 @@ const customIcon = new L.divIcon({
     iconAnchor: [20, 40]
 });
 
+const ItemIcon = ({ name }) => {
+    const itemName = (name || '').toLowerCase();
+    const strokeProps = { stroke: "currentColor", strokeWidth: "2", fill: "none", strokeLinecap: "round", strokeLinejoin: "round" };
+
+    if (itemName.includes('polo') || itemName.includes('shirt') || itemName.includes('hoodie') || itemName.includes('cardigan') || itemName.includes('top') || itemName.includes('singlet')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" /></svg>;
+    }
+    if (itemName.includes('jean') || itemName.includes('trouser') || itemName.includes('short') || itemName.includes('jogger') || itemName.includes('boxer')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M6 4h12l-1 18h-3l-2-8-2 8H8L7 4z" /></svg>;
+    }
+    if (itemName.includes('shoe') || itemName.includes('socks')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M4 14l3-3h4l4 2 4 1a2 2 0 011 2v1a2 2 0 01-2 2H6a2 2 0 01-2-2v-3z" /></svg>;
+    }
+    if (itemName.includes('bed') || itemName.includes('duvet') || itemName.includes('blanket')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M3 14h18M3 10h18M5 6h14v4H5V6zM3 18h18" /></svg>;
+    }
+    if (itemName.includes('rug') || itemName.includes('towel') || itemName.includes('curtain')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /><path d="M4 8h16M4 16h16" /></svg>;
+    }
+    if (itemName.includes('suit') || itemName.includes('agbada') || itemName.includes('gown') || itemName.includes('jumpsuit') || itemName.includes('safari') || itemName.includes('skirt') || itemName.includes('native')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M8 3h8l4 6-2 12H6L4 9l4-6z" /><path d="M12 3v18M8 9h8" /></svg>;
+    }
+    if (itemName.includes('bag')) {
+        return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0" /></svg>;
+    }
+    return <svg viewBox="0 0 24 24" {...strokeProps}><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>;
+};
+
 function LocationMarker({ position, setPosition, setTempAddress }) {
     useMapEvents({
         click(e) {
@@ -150,7 +178,7 @@ export default function Cart() {
                     // Use Nominatim (OpenStreetMap) for free reverse geocoding
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
                     const data = await res.json();
-                    
+
                     if (data.display_name) {
                         setAddress(data.display_name);
                     } else {
@@ -211,10 +239,10 @@ export default function Cart() {
     // ── Smart 4-7 Day Delivery Logic ──
     const deliveryRange = useMemo(() => {
         if (!pickupDate) return { min: '', max: '', quickDates: [] };
-        
+
         const [y, m, d] = pickupDate.split('-').map(Number);
         const pDate = new Date(y, m - 1, d);
-        
+
         const minD = new Date(pDate);
         minD.setDate(pDate.getDate() + 4); // CHANGED: Now 4 days minimum
         const maxD = new Date(pDate);
@@ -298,15 +326,16 @@ export default function Cart() {
 
     // Progress Logic
     const isProfileComplete = !!savedPhone && !!address;
-    const steps = [isProfileComplete, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
+    const hasAddress = !!address;
+    const steps = [hasAddress, !!pickupDate, !!pickupTime, !!deliveryDate, !!deliveryTime, !!paymentMethod];
     const completedStepsCount = steps.filter(Boolean).length;
     const progressPercent = cartItems.length === 0 ? 0 : (completedStepsCount / 6) * 100;
-    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0 && isProfileComplete && shopStatus.isOpen;
+    const isReadyToCheckout = completedStepsCount === 6 && cartItems.length > 0 && hasAddress && shopStatus.isOpen;
 
     // Smart Button Text
     let buttonPrompt = "Enter Delivery Details";
     if (!shopStatus.isOpen) buttonPrompt = "Shop Currently Closed";
-    else if (!savedPhone || !address) buttonPrompt = "Complete Profile in Account Settings";
+    else if (!hasAddress) buttonPrompt = "Enter Delivery Address";
     else if (!pickupDate) buttonPrompt = "Select Pickup Date";
     else if (!pickupTime) buttonPrompt = "Select Pickup Time";
     else if (!deliveryDate) buttonPrompt = "Confirm Delivery Date";
@@ -335,8 +364,7 @@ export default function Cart() {
     };
 
     const handleCheckoutPrompt = () => {
-        if (!isProfileComplete) {
-            navigate('/account');
+        if (!address) {
             return;
         }
         if (paymentMethod === 'Pay with Card') {
@@ -353,7 +381,7 @@ export default function Cart() {
 
         try {
             if (!auth.currentUser) throw new Error("Please log in to place an order.");
-            
+
             const docRef = await addDoc(collection(db, "orders"), {
                 userId: auth.currentUser.uid,
                 items: cartItems,
@@ -502,6 +530,19 @@ export default function Cart() {
                         </div>
                     </div>
                 )}
+                {!isProfileComplete && shopStatus.isOpen && cartItems.length > 0 && (
+                    <div className="mx-4 mb-6 bg-[#0F3024]/5 border border-[#0F3024]/10 p-6 rounded-[32px] flex items-center gap-4 animate-in slide-in-from-top-4">
+                        <div className="w-12 h-12 bg-[#0F3024]/10 text-[#0F3024] rounded-2xl flex items-center justify-center shrink-0">
+                            <Info className="w-6 h-6 shadow-sm" />
+                        </div>
+                        <div>
+                            <h4 className="font-extrabold text-[#0F3024] text-sm">Profile Incomplete</h4>
+                            <p className="text-[#0F3024]/80 text-[11px] font-bold mt-0.5 leading-tight uppercase tracking-wider">
+                                Please <Link to="/account" className="underline text-[#0F3024]">finish setting up your account</Link> for more precise location matching and feedback.
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {cartItems.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
                         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -517,8 +558,8 @@ export default function Cart() {
                         <div className="px-4 space-y-3 mb-8">
                             {cartItems.map(item => (
                                 <div key={item.id} className="bg-white p-4 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-[#0F3024]/5 rounded-2xl flex items-center justify-center shrink-0 p-2 border border-gray-100">
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                                    <div className="w-14 h-14 rounded-2xl bg-[#0F3024]/5 text-[#0F3024] border border-gray-100 flex items-center justify-center shrink-0 p-3">
+                                        <ItemIcon name={item.name} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-bold text-[#0F3024] text-[15px] truncate">{item.name}</h3>
@@ -560,7 +601,7 @@ export default function Cart() {
                                 </div>
 
                                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-                                    <button 
+                                    <button
                                         onClick={handleFetchCurrentLocation}
                                         disabled={isLoadingLocation}
                                         className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 ${isLoadingLocation ? 'bg-white/5 text-white/40 border border-white/5' : 'bg-[#E85D04] text-white shadow-lg shadow-[#E85D04]/20 border border-[#E85D04]'}`}
@@ -568,9 +609,9 @@ export default function Cart() {
                                         {isLoadingLocation ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
                                         {isLoadingLocation ? 'Locating...' : 'Current Location'}
                                     </button>
-                                    
+
                                     {savedAddress && (
-                                        <button 
+                                        <button
                                             onClick={() => setAddress(savedAddress)}
                                             className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 border ${address === savedAddress ? 'bg-white text-[#0F3024] border-white' : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'}`}
                                         >
@@ -648,13 +689,13 @@ export default function Cart() {
                                         <p className="text-[11px] text-white/50 font-medium">Standard 3-day turnaround</p>
                                     </div>
                                 </div>
-                                <DateSelector 
-                                    title="Day" 
-                                    selected={deliveryDate} 
-                                    onSelect={handleDeliveryDateSelect} 
-                                    forceQuickDates={deliveryRange.quickDates} 
-                                    minDate={deliveryRange.min} 
-                                    maxDate={deliveryRange.max} 
+                                <DateSelector
+                                    title="Day"
+                                    selected={deliveryDate}
+                                    onSelect={handleDeliveryDateSelect}
+                                    forceQuickDates={deliveryRange.quickDates}
+                                    minDate={deliveryRange.min}
+                                    maxDate={deliveryRange.max}
                                 />
                                 <TimeSelector title="Time Window" selected={deliveryTime} onSelect={setDeliveryTime} />
                             </div>
