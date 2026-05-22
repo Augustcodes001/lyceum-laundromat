@@ -23,7 +23,7 @@ const mockHistoryContent = [
     }
 ];
 
-const trackingStages = ['Order Placed', 'Picking Up', 'Washing', 'Out for Delivery', 'Delivered'];
+const trackingStages = ['Placed', 'Pickup', 'Washing/Ironing', 'Delivery', 'Completed'];
 
 export default function Orders({ isLoggedIn, onOpenAuth }) {
     const navigate = useNavigate();
@@ -106,10 +106,18 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
         return () => unsubscribe();
     }, [isLoggedIn]);
 
-    const activeOrders = orders.filter(o => o.status !== "Delivered");
-    const historyOrders = orders.filter(o => o.status === "Delivered");
+    const activeOrders = orders.filter(o => o.status !== "Delivered" && o.status !== "Completed");
+    const historyOrders = orders.filter(o => o.status === "Delivered" || o.status === "Completed");
 
-    const getStageIndex = (status) => Math.max(0, trackingStages.indexOf(status));
+    const getStageIndex = (status) => {
+        const lower = (status || '').toLowerCase();
+        if (lower.includes('placed')) return 0;
+        if (lower.includes('pick')) return 1;
+        if (lower.includes('wash') || lower.includes('iron')) return 2;
+        if (lower.includes('deliver') && !lower.includes('delivered')) return 3;
+        if (lower.includes('deliver') || lower.includes('complet')) return 4;
+        return 0; // Default fallback
+    };
 
     const handleCopyLink = (e, orderId) => {
         e.stopPropagation();
@@ -228,7 +236,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                         <div className="flex justify-between relative z-10">
                                             {/* Stage 1: Order Placed */}
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 0 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 0 ? 'bg-white text-[#E85D04] border-2 border-[#E85D04]/30' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 0 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 0 ? 'bg-[#E85D04] text-white border-2 border-[#E85D04]' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                                                 </div>
                                                 <span className={`text-[10px] font-bold ${currentStageIdx >= 0 ? 'text-[#0F3024]' : 'text-gray-400'}`}>Placed</span>
@@ -236,7 +244,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
 
                                             {/* Stage 2: Picking Up */}
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 1 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 1 ? 'bg-white text-[#E85D04] border-2 border-[#E85D04]/30' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 1 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 1 ? 'bg-[#E85D04] text-white border-2 border-[#E85D04]' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
                                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
                                                 </div>
                                                 <span className={`text-[10px] font-bold ${currentStageIdx >= 1 ? 'text-[#0F3024]' : 'text-gray-400'}`}>Pickup</span>
@@ -244,7 +252,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
 
                                             {/* Stage 3: Washing */}
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 2 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 2 ? 'bg-white text-[#E85D04] border-2 border-[#E85D04]/30' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 2 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 2 ? 'bg-[#E85D04] text-white border-2 border-[#E85D04]' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
                                                     <svg className={`w-6 h-6 ${currentStageIdx === 2 ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                                 </div>
                                                 <span className={`text-[10px] font-bold ${currentStageIdx >= 2 ? 'text-[#0F3024]' : 'text-gray-400'}`}>Washing</span>
@@ -252,7 +260,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
 
                                             {/* Stage 4: Out for Delivery */}
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 3 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 3 ? 'bg-white text-[#E85D04] border-2 border-[#E85D04]/30' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${currentStageIdx === 3 ? 'bg-[#E85D04] text-white shadow-[0_0_20px_rgba(232,93,4,0.4)] ring-4 ring-[#E85D04]/20 scale-110 animate-pulse' : currentStageIdx > 3 ? 'bg-[#E85D04] text-white border-2 border-[#E85D04]' : 'bg-white text-gray-300 border-2 border-gray-100'}`}>
                                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                                                 </div>
                                                 <span className={`text-[10px] font-bold ${currentStageIdx >= 3 ? 'text-[#0F3024]' : 'text-gray-400'}`}>Delivery</span>
