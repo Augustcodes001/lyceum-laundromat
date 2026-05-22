@@ -401,7 +401,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                             </div>
 
                             {/* ── NEW: REVIEW SECTION ── */}
-                            {selectedOrder.status === 'Delivered' && !reviewedOrders.has(selectedOrder.id) && (
+                            {(selectedOrder.status === 'Delivered' || selectedOrder.status === 'Completed') && !reviewedOrders.has(selectedOrder.id) && (
                                 <div className="mb-6">
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Share your experience</h4>
                                     {!isReviewExpanded ? (

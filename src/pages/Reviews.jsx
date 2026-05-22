@@ -12,15 +12,16 @@ export default function Reviews() {
     useEffect(() => {
         const q = query(
             collection(db, "reviews"),
-            where("rating", ">=", 3),
-            orderBy("rating", "desc"),
             orderBy("createdAt", "desc")
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetched = [];
             snapshot.forEach(doc => {
-                fetched.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                if (data.rating >= 3) {
+                    fetched.push({ id: doc.id, ...data });
+                }
             });
             setReviews(fetched);
             setLoading(false);
