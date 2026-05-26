@@ -99,12 +99,12 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
               {/* Desktop Auth Buttons */}
               <div className="flex items-center gap-4">
                 {isLoggedIn ? (
-                  <button
-                    onClick={onLogout}
-                    className="flex items-center justify-center border border-gray-200 text-[#0F3024] px-6 py-2 rounded-full font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                  <Link
+                    to="/orders"
+                    className="flex items-center justify-center bg-[#E85D04] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#cc5203] transition-colors shadow-md whitespace-nowrap"
                   >
-                    Log Out
-                  </button>
+                    Dashboard
+                  </Link>
                 ) : (
                   <button
                     onClick={() => onOpenAuth()}
@@ -138,9 +138,9 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
 
               {/* MOBILE AUTH PILL */}
               {isLoggedIn ? (
-                <button onClick={onLogout} className="bg-gray-100 text-[#0F3024] border border-gray-200 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-gray-200 transition-colors hidden md:block whitespace-nowrap">
-                  Log out
-                </button>
+                <Link to="/orders" className="bg-[#E85D04] text-white border border-[#E85D04] px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-[#cc5203] transition-colors hidden md:block whitespace-nowrap">
+                  Dashboard
+                </Link>
               ) : (
                 <button onClick={() => onOpenAuth()} className="bg-[#0F3024] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-[#1a4a38] transition-colors whitespace-nowrap">
                   Log in
@@ -217,6 +217,13 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
             {isLoggedIn ? (
               <>
                 <Link
+                  to="/orders"
+                  onClick={() => setIsHamburgerOpen(false)}
+                  className="w-full text-center bg-[#0F3024] text-white px-4 py-3 rounded-xl text-[16px] font-bold shadow-md hover:bg-[#1a4a38] transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
                   to="/account"
                   onClick={() => setIsHamburgerOpen(false)}
                   className="w-full text-center bg-gray-100 text-[#0F3024] px-4 py-3 rounded-xl text-[16px] font-bold transition-colors hover:bg-gray-200"
@@ -228,9 +235,9 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
                     onLogout();
                     setIsHamburgerOpen(false);
                   }}
-                  className="w-full text-center border border-gray-200 text-[#0F3024] px-4 py-3 rounded-xl text-[16px] font-bold transition-colors hover:bg-gray-50"
+                  className="w-full text-center border border-gray-200 text-gray-500 px-4 py-3 rounded-xl text-[16px] font-bold transition-colors hover:bg-red-50 hover:text-red-500 hover:border-red-200"
                 >
-                  Log out
+                  Log Out
                 </button>
               </>
             ) : (

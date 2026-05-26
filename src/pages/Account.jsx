@@ -15,9 +15,20 @@ export default function Account() {
     const [newPass, setNewPass] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     const isGoogleUser = auth.currentUser?.providerData.some(p => p.providerId === 'google.com');
     const isProfileIncomplete = !phone || !address;
+
+    const handleLogoutConfirm = async () => {
+        setIsLogoutModalOpen(false);
+        try {
+            await auth.signOut();
+            navigate('/');
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -194,11 +205,7 @@ export default function Account() {
                 {/* ── Logout Section ── */}
                 <div className="pt-4">
                     <button 
-                        onClick={() => {
-                            if (window.confirm("Are you sure you want to log out?")) {
-                                auth.signOut().then(() => navigate('/'));
-                            }
-                        }}
+                        onClick={() => setIsLogoutModalOpen(true)}
                         className="w-full bg-red-50 text-red-600 py-4 rounded-[24px] font-black uppercase tracking-widest border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-3 shadow-lg shadow-red-500/5 active:scale-[0.98]"
                     >
                         <LogOut className="w-5 h-5" />
@@ -207,6 +214,30 @@ export default function Account() {
                 </div>
 
             </div>
+
+            {/* 🛑 LOGOUT CONFIRMATION MODAL */}
+            {isLogoutModalOpen && (
+                <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-[24px] p-6 w-full max-w-sm shadow-2xl text-center">
+                        <h2 className="text-xl font-black text-[#0F3024] mb-2">Log out?</h2>
+                        <p className="text-gray-500 text-sm mb-6">Are you sure you want to return to the home screen?</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsLogoutModalOpen(false)}
+                                className="flex-1 bg-gray-100 text-[#0F3024] py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleLogoutConfirm}
+                                className="flex-1 bg-[#E85D04] text-white py-3 rounded-xl font-bold hover:bg-[#cc5203] transition-colors"
+                            >
+                                Log Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

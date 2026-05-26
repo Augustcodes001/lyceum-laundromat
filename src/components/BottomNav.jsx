@@ -24,50 +24,37 @@ export default function BottomNav({ onOpenAuth, isLoggedIn, onPromptLogout }) {
     const navItems = isLoggedIn ? loggedInItems : loggedOutItems;
 
     return (
-        <div className={`lg:hidden fixed bottom-0 left-0 right-0 border-t pb-safe z-50 transition-colors duration-300 ${isLoggedIn
-            ? 'bg-[#0F3024] border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]'
-            : 'bg-white border-gray-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]'
-            }`}>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-gray-200/60 bg-white/95 backdrop-blur-md pb-safe z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
             <div className="flex justify-around items-center h-[72px] px-2">
                 {navItems.map((item) => {
-                    const isActive = currentPath === item.path;
+                    const isActive = currentPath === item.path || (item.path !== '/' && currentPath.startsWith(item.path));
 
-                    // Dynamic colors based on Auth state
-                    const activeIconColor = 'text-[#E85D04]';
-                    const inactiveIconColor = isLoggedIn ? 'text-white/40' : 'text-[#0F3024]/40';
+                    // Unified colors for both states (crisp and clean)
+                    const activeIconColor = 'text-[#E85D04] scale-110';
+                    const inactiveIconColor = 'text-[#0F3024]/50 group-hover:text-[#0F3024]/80';
 
-                    const activeTextColor = isLoggedIn ? 'text-white' : 'text-[#0F3024]';
-                    const inactiveTextColor = isLoggedIn ? 'text-white/50' : 'text-[#0F3024]/60';
+                    const activeTextColor = 'text-[#E85D04] font-bold';
+                    const inactiveTextColor = 'text-[#0F3024]/60 font-medium group-hover:text-[#0F3024]/80';
 
                     // ── If it's a restricted link (Logged out user clicking 'Orders' or 'Account') ──
                     if (item.requiresAuth && !isLoggedIn) {
                         return (
-                            <button key={item.name} onClick={() => onOpenAuth(item.path)} className="flex flex-col items-center justify-center w-full h-full space-y-1.5 relative group cursor-pointer">
-                                <svg className={`relative w-6 h-6 transition-colors duration-300 ${inactiveIconColor} group-hover:text-[#E85D04]/70`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{item.icon}</svg>
-                                <span className={`text-[10px] tracking-wide font-medium transition-colors duration-300 ${inactiveTextColor}`}>{item.name}</span>
-                            </button>
-                        );
-                    }
-
-                    // ── If it's the Logout button (Logged in user) ──
-                    if (item.isLogout) {
-                        return (
-                            <button key={item.name} onClick={onPromptLogout} className="flex flex-col items-center justify-center w-full h-full space-y-1.5 relative group cursor-pointer">
-                                <svg className={`relative w-6 h-6 transition-colors duration-300 ${inactiveIconColor} hover:text-red-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{item.icon}</svg>
-                                <span className={`text-[10px] tracking-wide font-medium transition-colors duration-300 ${inactiveTextColor}`}>{item.name}</span>
+                            <button key={item.name} onClick={() => onOpenAuth(item.path)} className="flex flex-col items-center justify-center w-full h-full space-y-1.5 relative group cursor-pointer transition-all">
+                                <svg className={`relative w-6 h-6 transition-all duration-300 ${inactiveIconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{item.icon}</svg>
+                                <span className={`text-[10px] tracking-wide transition-all duration-300 ${inactiveTextColor}`}>{item.name}</span>
                             </button>
                         );
                     }
 
                     // ── Normal Navigation Links ──
                     return (
-                        <Link key={item.name} to={item.path} className="flex flex-col items-center justify-center w-full h-full space-y-1.5 relative group cursor-pointer">
-                            <svg className={`relative w-6 h-6 transition-transform transition-colors duration-300 ${isActive ? activeIconColor : inactiveIconColor} ${isActive && isLoggedIn ? 'drop-shadow-[0_0_8px_rgba(232,93,4,0.4)]' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isActive ? 2.5 : 2}>{item.icon}</svg>
+                        <Link key={item.name} to={item.path} className="flex flex-col items-center justify-center w-full h-full space-y-1.5 relative group cursor-pointer transition-all">
+                            <svg className={`relative w-6 h-6 transition-all duration-300 ${isActive ? activeIconColor : inactiveIconColor} ${isActive ? 'drop-shadow-[0_2px_4px_rgba(232,93,4,0.3)]' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isActive ? 2.5 : 2}>{item.icon}</svg>
 
-                            <span className={`text-[10px] tracking-wide transition-all duration-300 ${isActive ? `font-bold ${activeTextColor}` : `font-medium ${inactiveTextColor}`}`}>{item.name}</span>
+                            <span className={`text-[10px] tracking-wide transition-all duration-300 ${isActive ? activeTextColor : inactiveTextColor}`}>{item.name}</span>
 
-                            {/* Active Dot Indicator */}
-                            <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#E85D04] transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} ${isLoggedIn && isActive ? 'shadow-[0_0_6px_rgba(232,93,4,0.8)]' : ''}`}></span>
+                            {/* Crisp Active Dot Indicator */}
+                            <span className={`absolute bottom-0.5 w-1 h-1 rounded-full bg-[#E85D04] transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></span>
                         </Link>
                     );
                 })}

@@ -148,7 +148,7 @@ function AppContent() {
       {/* 🚀 NEW DESKTOP SIDEBAR */}
       {showSidebar && <Sidebar onPromptLogout={() => setIsLogoutModalOpen(true)} />}
 
-      <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
+      <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'lg:pb-0 pb-[72px]' : ''}`}>
         <Routes>
           <Route path="/" element={<Home onOpenAuth={() => setIsAuthModalOpen(true)} />} />
           <Route 
@@ -192,7 +192,7 @@ function AppContent() {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      {showUserLayout && showSidebar && (
+      {showUserLayout && (
         <BottomNav
           onOpenAuth={(route) => {
             setPendingRoute(route);
