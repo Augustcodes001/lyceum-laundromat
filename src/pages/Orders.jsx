@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { Star } from 'lucide-react';
+import { sendEmail } from '../utils/emailClient';
 
 const mockHistoryContent = [
     {
@@ -461,6 +462,15 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
                                                                 comment,
                                                                 createdAt: serverTimestamp()
                                                             });
+
+                                                            // 🔥 Notify admin of new review via Resend
+                                                            sendEmail('customer_review', {
+                                                                reviewerName: userProfile?.name || 'Customer',
+                                                                reviewerEmail: auth.currentUser.email,
+                                                                rating,
+                                                                comment,
+                                                            });
+
                                                             setIsReviewExpanded(false);
                                                             setRating(0);
                                                             setComment('');

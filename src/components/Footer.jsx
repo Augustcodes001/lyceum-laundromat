@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { sendEmail } from '../utils/emailClient';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -22,25 +23,8 @@ export default function Footer() {
         subscribedAt: serverTimestamp()
       });
 
-      // 2. Send email via Web3Forms
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
-          subject: "New Newsletter Subscriber!",
-          from_name: "Lyceum App",
-          email: email,
-          message: `You have a new newsletter subscriber: ${email}`
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Web3Forms delivery failed");
-      }
+      // 2. Send notification email via Resend
+      await sendEmail('newsletter', { subscriberEmail: email });
 
       setStatusMessage('success');
       setEmail('');
