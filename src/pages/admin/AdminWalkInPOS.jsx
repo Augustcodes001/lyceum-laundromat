@@ -22,6 +22,7 @@ import {
     Loader2,
     Trash2
 } from 'lucide-react';
+import ItemIcon from '../../components/ItemIcon';
 
 const AdminWalkInPOS = () => {
     // ── Dynamic Config State ──
@@ -60,19 +61,24 @@ const AdminWalkInPOS = () => {
         if (pricingMode === 'custom') {
             return parseFloat(customDetails.price) || 0;
         }
-        return ITEMS_DATA.reduce((sum, item) => {
-            // Updated: item.services is now a map, we use 'wash-fold' as POS baseline
-            const price = item.services?.['wash-fold'] || Object.values(item.services || {})[0] || 0;
-            return sum + (price * (selections[item.id] || 0));
+        return Object.keys(selections).reduce((sum, key) => {
+            const [itemId, serviceId] = key.split('-');
+            const item = ITEMS_DATA.find(i => i.id === itemId);
+            if (!item || !item.services[serviceId]) return sum;
+            return sum + (item.services[serviceId] * selections[key]);
         }, 0);
     }, [pricingMode, selections, customDetails, ITEMS_DATA]);
 
     // ── Handlers ──
-    const updateQty = (id, delta) => {
-        setSelections(prev => ({
-            ...prev,
-            [id]: Math.max(0, (prev[id] || 0) + delta)
-        }));
+    const updateQty = (itemId, serviceId, delta) => {
+        const key = `${itemId}-${serviceId}`;
+        setSelections(prev => {
+            const nextVal = Math.max(0, (prev[key] || 0) + delta);
+            const newState = { ...prev };
+            if (nextVal === 0) delete newState[key];
+            else newState[key] = nextVal;
+            return newState;
+        });
     };
 
     const generateTrackingId = () => {
@@ -88,6 +94,16 @@ const AdminWalkInPOS = () => {
         e.preventDefault();
         if (totalAmount <= 0) return alert("Total amount must be greater than ₦0");
         
+        if (pricingMode === 'menu' && Object.keys(selections).length === 0) {
+            return alert("Please select at least one item from the menu.");
+        }
+        
+        if (pricingMode === 'custom') {
+            if (!customDetails.description.trim()) {
+                return alert("Please enter a custom service description.");
+            }
+        }
+
         setIsSubmitting(true);
         const trackingId = generateTrackingId();
 
@@ -106,14 +122,16 @@ const AdminWalkInPOS = () => {
             };
 
             if (pricingMode === 'menu') {
-                orderData.items = ITEMS_DATA
-                    .filter(item => selections[item.id] > 0)
-                    .map(item => ({
+                orderData.items = Object.keys(selections).map(key => {
+                    const [itemId, serviceId] = key.split('-');
+                    const item = ITEMS_DATA.find(i => i.id === itemId);
+                    return {
                         name: item.name,
-                        qty: selections[item.id],
-                        price: item.services?.['wash-fold'] || Object.values(item.services || {})[0] || 0,
-                        service: 'General Walk-in Care'
-                    }));
+                        qty: selections[key],
+                        price: item.services[serviceId] || 0,
+                        service: SERVICES_META[serviceId]?.name || serviceId
+                    };
+                });
             } else {
                 orderData.items = [{
                     name: 'Custom Order',
@@ -316,35 +334,54 @@ const AdminWalkInPOS = () => {
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {ITEMS_DATA.map(item => {
-                                            const price = item.services?.['wash-fold'] || Object.values(item.services || {})[0] || 0;
+                                            const hasSelections = Object.keys(selections).some(key => key.startsWith(`${item.id}-`));
                                             return (
-                                                <div key={item.id} className={`p-4 rounded-3xl border transition-all flex items-center justify-center gap-4 ${selections[item.id] > 0 ? 'bg-emerald-50/50 border-[#0F3024]/20 ring-4 ring-[#0F3024]/5' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
-                                                    <div className="w-12 h-12 bg-white rounded-xl p-1 shrink-0 border border-gray-50 flex items-center justify-center">
-                                                        <img src={item.image} alt="" className="w-full h-full object-contain" />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-bold text-[#0F3024] text-sm leading-tight">{item.name}</p>
-                                                        <p className="text-[10px] font-black text-[#E85D04] uppercase tracking-widest mt-0.5">₦{price.toLocaleString()}</p>
+                                                <div key={item.id} className={`p-5 rounded-[24px] border transition-all ${hasSelections ? 'bg-emerald-50/40 border-[#0F3024]/20 ring-2 ring-[#0F3024]/5' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
+                                                    <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100/50">
+                                                        <div className="w-14 h-14 bg-gray-50 rounded-xl p-2 shrink-0 border border-gray-100 flex items-center justify-center text-[#0F3024] opacity-80 overflow-hidden relative">
+                                                            {item.imageUrl ? (
+                                                                <img src={item.imageUrl} alt="" className="w-full h-full object-cover rounded-lg" />
+                                                            ) : (
+                                                                <ItemIcon name={item.name} className="w-full h-full p-1" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-[#0F3024] text-[15px] leading-tight">{item.name}</p>
+                                                        </div>
                                                     </div>
                                                     
-                                                    <div className="flex items-center gap-3 bg-white rounded-2xl p-1 shadow-sm border border-gray-100 shrink-0">
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => updateQty(item.id, -1)}
-                                                            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                        >
-                                                            <Minus className="w-4 h-4" />
-                                                        </button>
-                                                        <span className={`w-8 text-center font-black text-sm ${selections[item.id] > 0 ? 'text-[#0F3024]' : 'text-gray-300'}`}>
-                                                            {selections[item.id] || 0}
-                                                        </span>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => updateQty(item.id, 1)}
-                                                            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-[#0F3024] hover:bg-gray-100 transition-all"
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                        </button>
+                                                    <div className="space-y-3">
+                                                        {Object.entries(item.services).map(([srvId, price]) => {
+                                                            if (price <= 0) return null;
+                                                            const qty = selections[`${item.id}-${srvId}`] || 0;
+                                                            return (
+                                                                <div key={srvId} className="flex flex-col gap-2">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-md max-w-[100px] truncate" title={SERVICES_META[srvId]?.name || srvId}>{SERVICES_META[srvId]?.name || srvId}</span>
+                                                                        <span className="text-[10px] font-black text-[#E85D04] uppercase w-[50px] text-right">₦{price.toLocaleString()}</span>
+                                                                        <div className="flex items-center gap-0 bg-white rounded-lg shadow-sm border border-gray-100 shrink-0 h-8">
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={() => updateQty(item.id, srvId, -1)}
+                                                                                className="w-8 h-8 flex items-center justify-center rounded-l-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all font-bold"
+                                                                            >
+                                                                                <Minus className="w-3 h-3" />
+                                                                            </button>
+                                                                            <span className={`w-6 text-center font-black text-xs ${qty > 0 ? 'text-[#0F3024]' : 'text-gray-300'}`}>
+                                                                                {qty}
+                                                                            </span>
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={() => updateQty(item.id, srvId, 1)}
+                                                                                className="w-8 h-8 flex items-center justify-center rounded-r-lg text-gray-400 hover:text-[#0F3024] hover:bg-gray-100 transition-all font-bold"
+                                                                            >
+                                                                                <Plus className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             );
@@ -358,7 +395,6 @@ const AdminWalkInPOS = () => {
                                         <div className="space-y-2">
                                             <label className="text-xs font-black text-[#0F3024] uppercase tracking-widest ml-1">Items Description</label>
                                             <textarea 
-                                                required={pricingMode === 'custom'}
                                                 value={customDetails.description}
                                                 onChange={e => setCustomDetails({...customDetails, description: e.target.value})}
                                                 className="w-full bg-gray-50 border-none rounded-3xl p-6 text-sm font-bold focus:ring-2 focus:ring-[#0F3024]/10 transition-all h-44 resize-none"
@@ -370,7 +406,6 @@ const AdminWalkInPOS = () => {
                                             <div className="relative group">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-400 group-focus-within:text-[#E85D04] transition-colors text-xl">₦</div>
                                                 <input 
-                                                    required={pricingMode === 'custom'}
                                                     type="number"
                                                     value={customDetails.price}
                                                     onChange={e => setCustomDetails({...customDetails, price: e.target.value})}

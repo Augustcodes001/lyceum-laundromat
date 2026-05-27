@@ -31,10 +31,12 @@ import {
     ShieldCheck,
     UserPlus,
     UserCheck,
+    UserCheck,
     ChevronRight,
     KeyRound,
     Users
 } from 'lucide-react';
+import ItemIcon from '../../components/ItemIcon';
 
 const AdminSettings = () => {
     // ── Global State ──
@@ -68,9 +70,21 @@ const AdminSettings = () => {
                         'dry-clean': { name: 'Dry Clean', desc: 'Premium stain removal & care', icon: 'dry-clean-icon' },
                     },
                     items: [
-                        { id: 'tshirt', name: 'T-Shirt / Polo', image: 'https://img.icons8.com/color/96/t-shirt--v1.png', services: { 'wash-fold': 1500, 'ironing': 800, 'dry-clean': 2500 } },
-                        { id: 'shirt', name: 'Dress Shirt', image: 'https://img.icons8.com/color/96/shirt.png', services: { 'wash-fold': 1500, 'ironing': 1000, 'dry-clean': 2500 } },
-                        { id: 'trouser', name: 'Trousers / Jeans', image: 'https://img.icons8.com/color/96/trousers.png', services: { 'wash-fold': 2000, 'ironing': 1200, 'dry-clean': 3500 } }
+                        { id: 'polo', name: 'Polo / T-Shirt', services: { 'wash-fold': 350, 'ironing': 200, 'dry-clean': 500 } },
+                        { id: 'trouser', name: 'Jean / Trouser', services: { 'wash-fold': 400, 'ironing': 200, 'dry-clean': 500 } },
+                        { id: 'short', name: 'Short', services: { 'wash-fold': 300, 'ironing': 150, 'dry-clean': 500 } },
+                        { id: 'native', name: 'Native Up and Down', services: { 'wash-fold': 600, 'ironing': 400, 'dry-clean': 1000 } },
+                        { id: 'agbada', name: 'Complete Agbada', services: { 'wash-fold': 1000, 'ironing': 700, 'dry-clean': 1800 } },
+                        { id: 'suit', name: 'Complete Suit', services: { 'wash-fold': 1000, 'ironing': 700, 'dry-clean': 1800 } },
+                        { id: 'shoe', name: 'Pair of Shoe', services: { 'wash-fold': 1000, 'ironing': 0, 'dry-clean': 1500 } },
+                        { id: 'duvet', name: 'Duvet', services: { 'wash-fold': 2000, 'ironing': 0, 'dry-clean': 3000 } },
+                        { id: 'white-duvet', name: 'White Duvet', services: { 'wash-fold': 2500, 'ironing': 0, 'dry-clean': 3500 } },
+                        { id: 'center-rug', name: 'Center Rug', services: { 'wash-fold': 7000, 'ironing': 0, 'dry-clean': 10000 } },
+                        { id: 'hoodie', name: 'Hoodie', services: { 'wash-fold': 400, 'ironing': 200, 'dry-clean': 500 } },
+                        { id: 'gown', name: 'Gown', services: { 'wash-fold': 500, 'ironing': 300, 'dry-clean': 800 } },
+                        { id: 'bedspread', name: 'Bedspread', services: { 'wash-fold': 500, 'ironing': 300, 'dry-clean': 800 } },
+                        { id: 'towel', name: 'Towel', services: { 'wash-fold': 500, 'ironing': 0, 'dry-clean': 700 } },
+                        { id: 'curtains', name: 'Curtains', services: { 'wash-fold': 800, 'ironing': 400, 'dry-clean': 1200 } }
                     ],
                     shop: { isOpen: true, announcement: "Welcome to Lyceum Laundromat!" }
                 };
@@ -124,7 +138,6 @@ const AdminSettings = () => {
         const newItem = {
             id: `item-${Date.now()}`,
             name: 'New Service Item',
-            image: 'https://img.icons8.com/color/96/washing-machine.png',
             services: {}
         };
         // Initialize all service categories to 0
@@ -284,13 +297,14 @@ const AdminSettings = () => {
                                         <div key={item.id} className="p-8 hover:bg-gray-50/50 transition-all group">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center p-2 border border-gray-100 group-hover:bg-white transition-colors relative">
-                                                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
-                                                        <button className="absolute -top-2 -right-2 w-6 h-6 bg-white shadow-md border border-gray-100 rounded-full flex items-center justify-center text-gray-300 hover:text-[#E85D04] opacity-0 group-hover:opacity-100 transition-all">
-                                                            <ImageIcon className="w-3 h-3" />
-                                                        </button>
+                                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center p-3 border border-gray-100 group-hover:bg-emerald-50 transition-colors text-[#0F3024] opacity-80 overflow-hidden relative">
+                                                        {item.imageUrl ? (
+                                                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <ItemIcon name={item.name} className="w-full h-full" />
+                                                        )}
                                                     </div>
-                                                    <div>
+                                                    <div className="flex-1 max-w-xs">
                                                         <input 
                                                             type="text" 
                                                             value={item.name}
@@ -300,7 +314,16 @@ const AdminSettings = () => {
                                                             }}
                                                             className="font-black text-[#0F3024] bg-transparent border-none p-0 focus:ring-0 text-lg w-full"
                                                         />
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID: {item.id}</p>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Custom Image URL (Optional)"
+                                                            value={item.imageUrl || ''}
+                                                            onChange={(e) => {
+                                                                const updated = config.items.map(i => i.id === item.id ? { ...i, imageUrl: e.target.value } : i);
+                                                                setConfig({ ...config, items: updated });
+                                                            }}
+                                                            className="text-[10px] font-bold text-gray-400 bg-transparent border-none p-0 focus:ring-0 w-full placeholder:text-gray-300 mt-1"
+                                                        />
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
