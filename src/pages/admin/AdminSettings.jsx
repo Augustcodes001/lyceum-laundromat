@@ -31,7 +31,6 @@ import {
     ShieldCheck,
     UserPlus,
     UserCheck,
-    UserCheck,
     ChevronRight,
     KeyRound,
     Users
