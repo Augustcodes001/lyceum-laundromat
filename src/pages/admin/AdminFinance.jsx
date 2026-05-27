@@ -43,19 +43,26 @@ const AdminFinance = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('All'); // 'All' or 'Unverified'
     const [verifyingId, setVerifyingId] = useState(null);
+    const [limitCount, setLimitCount] = useState(50);
+    const [showThisMonth, setShowThisMonth] = useState(false);
 
     useEffect(() => {
-        // ── Fetch Transactions (Latest 50) ──
-        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(50));
+        // ── Fetch Transactions ──
+        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(limitCount));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data()
+                ...doc.data(),
+                dateObj: doc.data().createdAt?.toDate() || new Date()
             }));
             setTransactions(data);
             setLoading(false);
         });
 
+        return () => unsubscribe();
+    }, [limitCount]);
+
+    useEffect(() => {
         // ── Fetch Financial Aggregations ──
         const fetchFinancials = async () => {
             try {
@@ -83,7 +90,6 @@ const AdminFinance = () => {
         };
 
         fetchFinancials();
-        return () => unsubscribe();
     }, []);
 
     // ── Reconciliation Logic ──
@@ -104,6 +110,10 @@ const AdminFinance = () => {
 
     // ── Filtering Logic ──
     const filteredTransactions = useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
         return transactions.filter(tx => {
             const matchesSearch = 
                 (tx.customerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,9 +122,40 @@ const AdminFinance = () => {
             const matchesFilter = filter === 'All' || 
                 (filter === 'Unverified' && tx.paymentStatus !== 'verified' && tx.paymentMethod === 'Bank Transfer');
 
-            return matchesSearch && matchesFilter;
+            const matchesMonth = !showThisMonth || 
+                (tx.dateObj && tx.dateObj.getMonth() === currentMonth && tx.dateObj.getFullYear() === currentYear);
+
+            return matchesSearch && matchesFilter && matchesMonth;
         });
-    }, [transactions, searchTerm, filter]);
+    }, [transactions, searchTerm, filter, showThisMonth]);
+
+    // ── Export Logic ──
+    const handleExportCSV = () => {
+        if (filteredTransactions.length === 0) return alert("No transactions to export.");
+        
+        const headers = ["Order Ref", "Customer Name", "Customer Phone", "Payment Method", "Status", "Amount", "Date"];
+        const rows = filteredTransactions.map(tx => [
+            tx.trackingId || tx.id.slice(-6),
+            tx.customerName || 'Anonymous',
+            tx.customerPhone || 'Online User',
+            tx.paymentMethod || 'Walk-in Pay',
+            tx.paymentStatus || 'unknown',
+            tx.total || 0,
+            tx.dateObj ? tx.dateObj.toLocaleDateString() : 'Unknown'
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n" 
+            + rows.map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `lyceum_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const getPaymentIcon = (method) => {
         if (method === 'Pay with Card') return <CreditCard className="w-4 h-4 text-blue-500" />;
@@ -140,10 +181,16 @@ const AdminFinance = () => {
                     <p className="text-gray-500 font-medium mt-1">Track revenue, payments, and financial distributions.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white border border-gray-200 px-6 py-3 rounded-2xl text-sm font-bold text-[#0F3024] hover:bg-gray-50 transition-all">
+                    <button 
+                        onClick={() => setShowThisMonth(!showThisMonth)}
+                        className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-sm font-bold transition-all ${showThisMonth ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm' : 'bg-white border-gray-200 text-[#0F3024] hover:bg-gray-50'}`}
+                    >
                         <Calendar className="w-4 h-4" /> This Month
                     </button>
-                    <button className="flex items-center gap-2 bg-[#0F3024] text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-xl shadow-[#0F3024]/20 hover:bg-[#0a2018] transition-all">
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 bg-[#0F3024] text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-xl shadow-[#0F3024]/20 hover:bg-[#0a2018] transition-all"
+                    >
                         <Download className="w-4 h-4" /> Export CSV
                     </button>
                 </div>
@@ -286,9 +333,18 @@ const AdminFinance = () => {
                 </div>
 
                 <div className="p-8 bg-gray-50/50 flex justify-center">
-                    <button className="text-xs font-black text-[#0F3024] uppercase tracking-widest hover:text-[#E85D04] transition-colors">
-                        Load Full Ledger history
-                    </button>
+                    {limitCount <= 50 ? (
+                        <button 
+                            onClick={() => setLimitCount(500)}
+                            className="text-xs font-black text-[#0F3024] uppercase tracking-widest hover:text-[#E85D04] transition-colors"
+                        >
+                            Load Full Ledger history
+                        </button>
+                    ) : (
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                            Showing Extended Ledger History
+                        </p>
+                    )}
                 </div>
             </div>
 

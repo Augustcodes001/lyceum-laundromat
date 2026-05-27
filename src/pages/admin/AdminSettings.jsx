@@ -120,6 +120,27 @@ const AdminSettings = () => {
         setConfig({ ...config, items: updatedItems });
     };
 
+    const handleAddItem = () => {
+        const newItem = {
+            id: `item-${Date.now()}`,
+            name: 'New Service Item',
+            image: 'https://img.icons8.com/color/96/washing-machine.png',
+            services: {}
+        };
+        // Initialize all service categories to 0
+        Object.keys(config.services || {}).forEach(srvId => {
+            newItem.services[srvId] = 0;
+        });
+
+        setConfig({ ...config, items: [newItem, ...config.items] });
+    };
+
+    const handleDeleteItem = (itemId) => {
+        if (!window.confirm("Are you sure you want to remove this item?")) return;
+        const updatedItems = config.items.filter(item => item.id !== itemId);
+        setConfig({ ...config, items: updatedItems });
+    };
+
     // ── Logic: Security ──
     const handleUpdatePassword = async (e) => {
         e.preventDefault();
@@ -251,7 +272,10 @@ const AdminSettings = () => {
                                         </div>
                                         <h2 className="text-xl font-black text-[#0F3024]">Service Pricing</h2>
                                     </div>
-                                    <button className="flex items-center gap-2 text-xs font-black text-[#E85D04] uppercase tracking-widest hover:text-[#cc5203] transition-colors">
+                                    <button 
+                                        onClick={handleAddItem}
+                                        className="flex items-center gap-2 text-xs font-black text-[#E85D04] uppercase tracking-widest hover:text-[#cc5203] transition-colors"
+                                    >
                                         <Plus className="w-4 h-4" /> Add Item
                                     </button>
                                 </div>
@@ -295,7 +319,10 @@ const AdminSettings = () => {
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <button className="p-3 text-gray-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                <button 
+                                                    onClick={() => handleDeleteItem(item.id)}
+                                                    className="p-3 text-gray-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
                                             </div>
