@@ -1,18 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    collection, 
-    query, 
-    where, 
-    getCountFromServer, 
-    getAggregateFromServer, 
-    sum 
-} from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { 
-    LayoutDashboard, 
-    Users, 
     ShoppingBag, 
+    Users, 
     TrendingUp, 
     AlertCircle,
     Loader2,
@@ -31,43 +23,36 @@ const AdminDashboard = () => {
     });
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // ── Server-Side Aggregations (High Performance) ──
-                
-                // 1. Total Orders Count
-                const ordersCountSnap = await getCountFromServer(collection(db, "orders"));
-                
-                // 2. Active Users Count
-                const usersCountSnap = await getCountFromServer(collection(db, "users"));
-                
-                // 3. Total Revenue (Sum of 'total' field)
-                const revenueSnap = await getAggregateFromServer(collection(db, "orders"), {
-                    totalRevenue: sum('total')
-                });
-                
-                // 4. Pending Walk-ins (Filtered Count)
-                const walkinQuery = query(
-                    collection(db, "orders"), 
-                    where("type", "==", "walk-in"),
-                    where("status", "!=", "Completed")
-                );
-                const walkinCountSnap = await getCountFromServer(walkinQuery);
+        // ── 1. Real-time Orders Listener (derives count + revenue + pending walk-ins) ──
+        const unsubOrders = onSnapshot(collection(db, "orders"), (snapshot) => {
+            const orders = snapshot.docs.map(d => d.data());
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+            const pendingWalkins = orders.filter(o => o.type === 'walk-in' && o.status !== 'Completed').length;
 
-                setStats({
-                    totalOrders: ordersCountSnap.data().count,
-                    activeUsers: usersCountSnap.data().count,
-                    totalRevenue: revenueSnap.data().totalRevenue || 0,
-                    pendingWalkins: walkinCountSnap.data().count,
-                    loading: false
-                });
-            } catch (error) {
-                console.error("Dashboard Stats Error:", error);
-                setStats(prev => ({ ...prev, loading: false }));
-            }
+            setStats(prev => ({
+                ...prev,
+                totalOrders,
+                totalRevenue,
+                pendingWalkins,
+                loading: false
+            }));
+        }, (err) => {
+            console.error("Orders listener error:", err);
+            setStats(prev => ({ ...prev, loading: false }));
+        });
+
+        // ── 2. Real-time Users Listener ──
+        const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+            setStats(prev => ({ ...prev, activeUsers: snapshot.size }));
+        }, (err) => {
+            console.error("Users listener error:", err);
+        });
+
+        return () => {
+            unsubOrders();
+            unsubUsers();
         };
-
-        fetchStats();
     }, []);
 
     const formatRevenue = (val) => {
@@ -139,7 +124,7 @@ const AdminDashboard = () => {
                     
                     <div className="relative z-10">
                         <h3 className="text-3xl font-black text-white tracking-tight leading-tight max-w-sm">Revenue Intelligence is now online.</h3>
-                        <p className="text-emerald-100/60 mt-4 max-w-md font-medium leading-relaxed">We've migrated your dashboard to server-side aggregations. This ensures sub-millisecond load times even as your orders scale into the hundreds of thousands.</p>
+                        <p className="text-emerald-100/60 mt-4 max-w-md font-medium leading-relaxed">All dashboard metrics are powered by real-time Firestore listeners. Every new order, user, and walk-in is instantly reflected across the command center.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mt-12 relative z-10">
@@ -149,7 +134,7 @@ const AdminDashboard = () => {
                         </div>
                         <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 backdrop-blur-md">
                             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">Customer LTV</p>
-                            <p className="text-2xl font-black text-white">₦{(stats.totalRevenue / stats.activeUsers || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                            <p className="text-2xl font-black text-white">₦{(stats.activeUsers > 0 ? stats.totalRevenue / stats.activeUsers : 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                         </div>
                     </div>
                 </div>

@@ -88,6 +88,10 @@ const AdminSettings = () => {
                     ],
                     shop: { isOpen: true, announcement: "Welcome to Lyceum Laundromat!" }
                 };
+                // ── Auto-seed defaults into Firestore so all components stay in sync ──
+                setDoc(doc(db, "settings", "global"), { ...defaults, seededAt: new Date().toISOString() })
+                    .then(() => console.log("✅ Default config seeded to Firestore"))
+                    .catch(err => console.error("Failed to seed defaults:", err));
                 setConfig(defaults);
             }
             setLoading(false);
