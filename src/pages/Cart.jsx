@@ -376,13 +376,13 @@ export default function Cart() {
         }
     };
 
-    const handleFinalProcessing = async () => {
+   const handleFinalProcessing = async () => {
         setIsProcessing(true);
         setShowPaystackModal(false);
 
         try {
             if (!auth.currentUser) throw new Error("Please log in to place an order.");
-
+            
             // 🌟 FIX: Sanitize the cart items to ensure NO undefined values exist
             const sanitizedCartItems = cartItems.map(item => ({
                 id: item.id || "unknown",
@@ -434,19 +434,19 @@ export default function Cart() {
             localStorage.removeItem('antigravity_addrDescription');
 
             // Route to success utilizing document ID
-            navigate('/order-success', {
-                state: {
-                    orderId: docRef.id,
-                    total,
-                    cartItems: sanitizedCartItems,
-                    address,
-                    description: addrDescription,
-                    pickupDate,
-                    pickupTime,
-                    deliveryDate,
-                    deliveryTime,
-                    paymentMethod
-                }
+            navigate('/order-success', { 
+                state: { 
+                    orderId: docRef.id, 
+                    total, 
+                    cartItems: sanitizedCartItems, 
+                    address, 
+                    description: addrDescription, 
+                    pickupDate, 
+                    pickupTime, 
+                    deliveryDate, 
+                    deliveryTime, 
+                    paymentMethod 
+                } 
             });
 
         } catch (error) {
