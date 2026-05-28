@@ -88,7 +88,7 @@ export default function OrderSuccess() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0F3024] pb-44 font-sans flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-[100dvh] bg-[#0F3024] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden font-sans">
 
             <div className="w-24 h-24 rounded-full bg-[#E85D04]/10 border-2 border-[#E85D04] flex items-center justify-center mb-8 animate-bounce shadow-[0_0_40px_rgba(232,93,4,0.3)]">
                 <svg className="w-12 h-12 text-[#E85D04]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -118,7 +118,7 @@ export default function OrderSuccess() {
                     ) : 'Copy Tracking Link'}
                 </button>
             </div>
-            
+
             {orderSummary?.paymentMethod === 'Bank Transfer' && (
                 <div className="bg-[#E85D04]/10 border border-[#E85D04]/20 rounded-[32px] p-6 w-full max-w-sm mb-6 text-left">
                     <h3 className="text-[#E85D04] font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">

@@ -52,16 +52,16 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🌟 FIX: Strict Layout Logic
   // Define all public pages where the sidebar should NEVER show
   const publicRoutes = ['/', '/pricing', '/privacy', '/terms', '/reset-password', '/order-success'];
-  
+
   const isHomePage = location.pathname === '/';
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/track');
   const isAdminPath = location.pathname.startsWith('/admin');
-  
+  const isOrderSuccessPage = location.pathname === '/order-success'; // 🌟 NEW RULE 
+
   // Show sidebar ONLY if logged in, NOT on a public route, and NOT on admin
-  const showSidebar = isLoggedIn && !isPublicRoute && !isAdminPath; 
+  const showSidebar = isLoggedIn && !isPublicRoute && !isAdminPath;
   const showUserLayout = !isAdminPath;
 
   useEffect(() => {
@@ -140,27 +140,27 @@ function AppContent() {
         </div>
       )}
 
-      {/* Header logic adjusted to show on public routes, not just home */}
-      {showUserLayout && (!isLoggedIn || isPublicRoute) && (
+      {/* 🌟 FIX: Do not show Header on Order Success Page */}
+      {showUserLayout && (!isLoggedIn || isPublicRoute) && !isOrderSuccessPage && (
         <Header onOpenAuth={() => setIsAuthModalOpen(true)} isLoggedIn={isLoggedIn} onLogout={() => setIsLogoutModalOpen(true)} />
       )}
 
       {/* 🚀 NEW DESKTOP SIDEBAR */}
       {showSidebar && <Sidebar onPromptLogout={() => setIsLogoutModalOpen(true)} />}
 
-      <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'lg:pb-0 pb-[72px]' : ''}`}>
+      <div className={`${showSidebar ? 'lg:ml-64' : ''} ${showUserLayout ? 'sm:pb-0 pb-16' : ''}`}>
         <Routes>
           <Route path="/" element={<Home onOpenAuth={() => setIsAuthModalOpen(true)} />} />
-          <Route 
-            path="/pricing" 
+          <Route
+            path="/pricing"
             element={
-              <ServicesPricing 
+              <ServicesPricing
                 onOpenAuth={(route) => {
                   setPendingRoute(route);
                   setIsAuthModalOpen(true);
-                }} 
+                }}
               />
-            } 
+            }
           />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
@@ -192,7 +192,7 @@ function AppContent() {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      {showUserLayout && (
+      {showUserLayout && showSidebar && (
         <BottomNav
           onOpenAuth={(route) => {
             setPendingRoute(route);
