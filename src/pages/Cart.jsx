@@ -383,18 +383,48 @@ export default function Cart() {
         try {
             if (!auth.currentUser) throw new Error("Please log in to place an order.");
 
+            // 🌟 FIX: Sanitize the cart items to ensure NO undefined values exist
+            const sanitizedCartItems = cartItems.map(item => ({
+                id: item.id || "unknown",
+                name: item.name || "Unknown Item",
+                service: item.service || "",
+                price: item.price || 0,
+                qty: item.qty || 1,
+                image: item.image || null // 👈 This fixes the crash!
+            }));
+
+            // 🌟 FIX: Sanitize all other fields just to be perfectly safe
             const docRef = await addDoc(collection(db, "orders"), {
                 userId: auth.currentUser.uid,
-                items: cartItems,
+                items: sanitizedCartItems,
                 status: "Order Placed",
-                address: address,
-                description: addrDescription,
-                pickup: { date: pickupDate, time: pickupTime },
-                delivery: { date: deliveryDate, time: deliveryTime },
-                paymentMethod,
-                total: total,
+                address: address || "",
+                description: addrDescription || "",
+                pickup: { date: pickupDate || "", time: pickupTime || "" },
+                delivery: { date: deliveryDate || "", time: deliveryTime || "" },
+                paymentMethod: paymentMethod || "",
+                total: total || 0,
                 createdAt: serverTimestamp()
             });
+
+            // 🔥 TRIGGER RESEND + VERCEL EMAIL
+            // We wrap this in a try/catch so if the email fails, it doesn't break the customer's order
+            try {
+                await sendEmail({
+                    type: 'new_order',
+                    to: auth.currentUser.email || "hello@lyceum.com",
+                    payload: {
+                        customerName: auth.currentUser.displayName || 'Valued Customer',
+                        orderId: docRef.id,
+                        items: sanitizedCartItems,
+                        total: total,
+                        address: address
+                    }
+                });
+                console.log("Vercel/Resend email triggered successfully!");
+            } catch (emailError) {
+                console.error("Email dispatch failed, but order was saved:", emailError);
+            }
 
             // Clean up strictly after successful network write
             setCartItems([]);
@@ -404,20 +434,25 @@ export default function Cart() {
             localStorage.removeItem('antigravity_addrDescription');
 
             // Route to success utilizing document ID
-            navigate('/order-success', { state: { orderId: docRef.id, total, cartItems, address, description: addrDescription, pickupDate, pickupTime, deliveryDate, deliveryTime, paymentMethod } });
-
-            // 🔥 Send order confirmation emails (admin + customer receipt)
-            sendEmail('new_order', {
-                customerName: auth.currentUser.displayName || 'Valued Customer',
-                customerEmail: auth.currentUser.email,
-                orderId: docRef.id,
-                items: cartItems,
-                total,
-                address,
+            navigate('/order-success', {
+                state: {
+                    orderId: docRef.id,
+                    total,
+                    cartItems: sanitizedCartItems,
+                    address,
+                    description: addrDescription,
+                    pickupDate,
+                    pickupTime,
+                    deliveryDate,
+                    deliveryTime,
+                    paymentMethod
+                }
             });
+
         } catch (error) {
             console.error("Order failed:", error);
             alert("Order submission failed: " + error.message);
+        } finally {
             setIsProcessing(false);
         }
     };
