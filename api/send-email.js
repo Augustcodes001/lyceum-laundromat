@@ -181,6 +181,47 @@ export default async function handler(req, res) {
         break;
       }
 
+      // 5. Order Status Update — sent to customer
+      case 'status_update': {
+        const { customerName, customerEmail, orderId, status } = payload;
+
+        const statusMessages = {
+          'Pickup':          { emoji: '🚗', msg: 'Our rider is on the way to pick up your laundry!' },
+          'Washing/Ironing': { emoji: '🧺', msg: 'Your clothes are being expertly cleaned and pressed.' },
+          'Delivery':        { emoji: '🚚', msg: 'Your fresh laundry is out for delivery right now!' },
+          'Completed':       { emoji: '✅', msg: 'All done! Your laundry has been delivered. Enjoy!' },
+          'Order Placed':    { emoji: '📦', msg: 'Your order has been received and is being processed.' },
+        };
+
+        const { emoji, msg } = statusMessages[status] || { emoji: '🔔', msg: `Your order status has been updated to "${status}".` };
+
+        emailData = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: customerEmail,
+          subject: `${emoji} Order #${orderId} Update: ${status}`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:26px;">Order Update ${emoji}</h1>
+                <p style="color:#E85D04;margin:6px 0 0;font-size:14px;">Order #${orderId}</p>
+              </div>
+              <div style="background:#f9f9f9;padding:28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                <p style="font-size:16px;">Hi <strong>${customerName}</strong>,</p>
+                <div style="background:#E85D04;color:white;padding:20px;border-radius:12px;text-align:center;margin:20px 0;">
+                  <p style="font-size:22px;margin:0;font-weight:bold;">${status}</p>
+                </div>
+                <p style="color:#444;font-size:15px;">${msg}</p>
+                <p style="color:#666;font-size:13px;margin-top:24px;">
+                  Track your order in real time at <a href="${process.env.VITE_APP_URL || 'https://lyceum.vercel.app'}/track/${orderId}" style="color:#E85D04;">Lyceum Tracking</a>
+                </p>
+                <p style="color:#999;font-size:12px;margin-top:16px;">Questions? WhatsApp us at +234 708 500 4780</p>
+              </div>
+            </div>
+          `
+        });
+        break;
+      }
+
       default:
         return res.status(400).json({ error: `Unknown email type: ${type}` });
     }

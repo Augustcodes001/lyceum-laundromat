@@ -236,9 +236,23 @@ export default function Track() {
                                         <span className="font-black">{order.customerPhone}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between items-center text-sm">
                                     <span className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Total Order</span>
-                                    <span className="font-black text-[#E85D04]">₦{order.total?.toLocaleString()}</span>
+                                    <div className="flex flex-col items-end">
+                                        {Math.abs(order.deliveryFee || 0) > 0 && order.deliveryFeeWaived && (
+                                            <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-1 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                🎉 Lyceum Waived Delivery!
+                                            </span>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {Math.abs(order.deliveryFee || 0) > 0 && order.deliveryFeeWaived && (
+                                                <span className="text-white/30 line-through text-xs font-bold">
+                                                    ₦{((order.total || 0) + (order.deliveryFee || 0)).toLocaleString()}
+                                                </span>
+                                            )}
+                                            <span className="font-black text-[#E85D04] text-lg">₦{order.total?.toLocaleString()}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 {order.description && (
                                     <div className="pt-3 border-t border-white/10">

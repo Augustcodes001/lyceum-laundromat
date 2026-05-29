@@ -63,33 +63,28 @@ const AdminFinance = () => {
     }, [limitCount]);
 
     useEffect(() => {
-        // ── Fetch Financial Aggregations ──
-        const fetchFinancials = async () => {
-            try {
-                // Total Revenue
-                const totalSnap = await getAggregateFromServer(collection(db, "orders"), {
-                    totalRevenue: sum('total')
-                });
-                
-                const walkinSnap = await getAggregateFromServer(query(collection(db, "orders"), where("type", "==", "walk-in")), {
-                    revenue: sum('total')
-                });
+        // ── Fetch Financial Aggregations (Real-time Full Audit) ──
+        const unsubAggregations = onSnapshot(collection(db, "orders"), (snapshot) => {
+            const allOrders = snapshot.docs.map(doc => doc.data());
+            
+            // Only sum verified payments or secure card payments
+            const verifiedOrders = allOrders.filter(o => o.paymentStatus === 'verified' || o.paymentMethod === 'Pay with Card');
+            
+            const total = verifiedOrders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+            const walkin = verifiedOrders.filter(o => o.type === 'walk-in').reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
 
-                const total = totalSnap.data().totalRevenue || 0;
-                const walkin = walkinSnap.data().revenue || 0;
+            setStats({
+                totalRevenue: total,
+                onlineRevenue: total - walkin,
+                walkinRevenue: walkin,
+                loading: false
+            });
+        }, (err) => {
+            console.error("Aggregation Error:", err);
+            setStats(prev => ({ ...prev, loading: false }));
+        });
 
-                setStats({
-                    totalRevenue: total,
-                    onlineRevenue: total - walkin,
-                    walkinRevenue: walkin,
-                    loading: false
-                });
-            } catch (err) {
-                console.error("Aggregation Error:", err);
-            }
-        };
-
-        fetchFinancials();
+        return () => unsubAggregations();
     }, []);
 
     // ── Reconciliation Logic ──
@@ -313,7 +308,7 @@ const AdminFinance = () => {
                                         <p className="font-black text-[#0F3024] text-lg">₦{tx.total?.toLocaleString()}</p>
                                     </td>
                                     <td className="px-8 py-6 text-center">
-                                        {tx.paymentStatus !== 'verified' && tx.paymentMethod === 'Bank Transfer' ? (
+                                        {tx.paymentStatus !== 'verified' ? (
                                             <button 
                                                 onClick={() => handleVerify(tx.id)}
                                                 className="bg-[#0F3024] hover:bg-[#0a2018] text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all shadow-lg shadow-emerald-900/20"

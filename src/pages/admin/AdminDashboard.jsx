@@ -27,7 +27,15 @@ const AdminDashboard = () => {
         const unsubOrders = onSnapshot(collection(db, "orders"), (snapshot) => {
             const orders = snapshot.docs.map(d => d.data());
             const totalOrders = orders.length;
-            const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+            
+            // Only sum verified payments or secure card payments
+            const totalRevenue = orders.reduce((sum, o) => {
+                if (o.paymentStatus === 'verified' || o.paymentMethod === 'Pay with Card') {
+                    return sum + (parseFloat(o.total) || 0);
+                }
+                return sum;
+            }, 0);
+            
             const pendingWalkins = orders.filter(o => o.type === 'walk-in' && o.status !== 'Completed').length;
 
             setStats(prev => ({

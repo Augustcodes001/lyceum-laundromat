@@ -11,6 +11,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { sendEmail } from '../../utils/emailClient';
 import { 
     ShoppingBag, 
     Search, 
@@ -138,13 +139,48 @@ const AdminOrders = () => {
                 status: newStatus,
                 updatedAt: serverTimestamp()
             });
+            
+            const orderRef = orders.find(o => o.id === orderId) || selectedOrderDetails;
+
             // If panel is open for this order, update local state too
             if (selectedOrderDetails?.id === orderId) {
                 setSelectedOrderDetails(prev => ({ ...prev, status: newStatus }));
             }
+
+            // ── Dispatch Status Update Email ──
+            if (orderRef?.customerEmail) {
+                sendEmail('status_update', {
+                    customerName: orderRef.customerName || "Customer",
+                    customerEmail: orderRef.customerEmail,
+                    orderId: orderRef.trackingId || orderRef.id.slice(-6),
+                    status: newStatus
+                }).catch(e => console.error("Silently failing email dispatch:", e));
+            }
+
         } catch (e) {
             console.error("Single update error:", e);
             alert("Failed to update status.");
+        }
+    };
+
+    const handleWaiveDeliveryFee = async () => {
+        if (!selectedOrderDetails || selectedOrderDetails.deliveryFeeWaived) return;
+        
+        const fee = selectedOrderDetails.deliveryFee || 0;
+        if (fee <= 0) return;
+
+        const newTotal = Math.max(0, (selectedOrderDetails.total || 0) - fee);
+
+        try {
+            await updateDoc(doc(db, "orders", selectedOrderDetails.id), {
+                total: newTotal,
+                deliveryFeeWaived: true,
+                updatedAt: serverTimestamp()
+            });
+            setSelectedOrderDetails(prev => ({ ...prev, total: newTotal, deliveryFeeWaived: true }));
+        } catch (e) {
+            console.error("Waive error:", e);
+            alert("Failed to waive delivery fee.");
         }
     };
 
@@ -303,14 +339,29 @@ const AdminOrders = () => {
                                             <p className="font-black text-[#0F3024]">₦{(item.price * item.qty).toLocaleString()}</p>
                                         </div>
                                     ))}
-                                    <div className="p-6 bg-[#0F3024] text-white rounded-3xl flex justify-between items-center shadow-xl shadow-emerald-900/40">
-                                        <div>
+                                    <div className="p-6 bg-[#0F3024] text-white rounded-3xl flex justify-between items-center shadow-xl shadow-emerald-900/40 relative overflow-hidden">
+                                        <div className="relative z-10">
                                             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Total Value</p>
                                             <h4 className="text-2xl font-black">₦{selectedOrderDetails.total?.toLocaleString()}</h4>
+                                            {selectedOrderDetails.deliveryFeeWaived && (
+                                                <span className="inline-block mt-2 bg-[#E85D04] text-white text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md">
+                                                    Delivery Waived
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex flex-col items-end">
+                                        <div className="flex flex-col items-end relative z-10">
                                             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Payment</p>
-                                            <p className="font-black text-sm">{selectedOrderDetails.paymentMethod || 'Unspecified'}</p>
+                                            <p className="font-black text-sm text-right">{selectedOrderDetails.paymentMethod || 'Unspecified'}</p>
+                                            
+                                            {/* Waive Action explicitly for Pay on Delivery */}
+                                            {selectedOrderDetails.paymentMethod === 'Pay on Delivery' && !selectedOrderDetails.deliveryFeeWaived && (selectedOrderDetails.deliveryFee > 0) && (
+                                                <button 
+                                                    onClick={handleWaiveDeliveryFee}
+                                                    className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#E85D04] hover:text-white border border-[#E85D04]/30 hover:border-[#E85D04] bg-[#E85D04]/10 hover:bg-[#E85D04] px-4 py-1.5 rounded-xl transition-all"
+                                                >
+                                                    Waive Delivery
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

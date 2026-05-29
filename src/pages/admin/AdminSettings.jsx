@@ -33,7 +33,8 @@ import {
     UserCheck,
     ChevronRight,
     KeyRound,
-    Users
+    Users,
+    Truck
 } from 'lucide-react';
 import ItemIcon from '../../components/ItemIcon';
 
@@ -44,6 +45,7 @@ const AdminSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // ── Security Tab State ──
     const [currentPassword, setCurrentPassword] = useState('');
@@ -60,7 +62,17 @@ const AdminSettings = () => {
         // ── Fetch Global Config ──
         const unsubscribeConfig = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
             if (docSnap.exists()) {
-                setConfig(docSnap.data());
+                const data = docSnap.data();
+                // Ensure legacy configs get the new delivery schema automatically
+                if (!data.delivery) {
+                    data.delivery = {
+                        baseFee: 1500,
+                        pricePerKm: 200,
+                        companyLat: 6.3986,
+                        companyLng: 5.6179,
+                    };
+                }
+                setConfig(data);
             } else {
                 const defaults = {
                     services: {
@@ -79,13 +91,14 @@ const AdminSettings = () => {
                         { id: 'duvet', name: 'Duvet', services: { 'wash-fold': 2000, 'ironing': 0, 'dry-clean': 3000 } },
                         { id: 'white-duvet', name: 'White Duvet', services: { 'wash-fold': 2500, 'ironing': 0, 'dry-clean': 3500 } },
                         { id: 'center-rug', name: 'Center Rug', services: { 'wash-fold': 7000, 'ironing': 0, 'dry-clean': 10000 } },
-                        { id: 'hoodie', name: 'Hoodie', services: { 'wash-fold': 400, 'ironing': 200, 'dry-clean': 500 } },
-                        { id: 'gown', name: 'Gown', services: { 'wash-fold': 500, 'ironing': 300, 'dry-clean': 800 } },
-                        { id: 'bedspread', name: 'Bedspread', services: { 'wash-fold': 500, 'ironing': 300, 'dry-clean': 800 } },
-                        { id: 'towel', name: 'Towel', services: { 'wash-fold': 500, 'ironing': 0, 'dry-clean': 700 } },
-                        { id: 'curtains', name: 'Curtains', services: { 'wash-fold': 800, 'ironing': 400, 'dry-clean': 1200 } }
                     ],
-                    shop: { isOpen: true, announcement: "Welcome to Lyceum Laundromat!" }
+                    shop: { isOpen: true, announcement: "Welcome to Lyceum Laundromat!" },
+                    delivery: {
+                        baseFee: 1500,
+                        pricePerKm: 200,
+                        companyLat: 6.3986,
+                        companyLng: 5.6179,
+                    }
                 };
                 // ── Auto-seed defaults into Firestore so all components stay in sync ──
                 setDoc(doc(db, "settings", "global"), { ...defaults, seededAt: new Date().toISOString() })
@@ -241,7 +254,7 @@ const AdminSettings = () => {
                             {message.text}
                         </div>
                     )}
-                    {activeTab === 'shop' && (
+                    {(activeTab === 'shop' || activeTab === 'delivery') && (
                         <button 
                             onClick={handleSaveConfig}
                             disabled={saving}
@@ -255,9 +268,10 @@ const AdminSettings = () => {
             </div>
 
             {/* ── Tabs Navigation ── */}
-            <div className="flex bg-white/50 p-1.5 rounded-[24px] border border-gray-100 w-fit">
+            <div className="flex bg-white/50 p-1.5 rounded-[24px] border border-gray-100 w-fit overflow-x-auto max-w-full">
                 {[
                     { id: 'shop', label: 'Shop Config', icon: Store },
+                    { id: 'delivery', label: 'Delivery', icon: Truck },
                     { id: 'security', label: 'Security', icon: ShieldCheck },
                     { id: 'team', label: 'Team', icon: Users },
                 ].map((tab) => (
@@ -281,22 +295,31 @@ const AdminSettings = () => {
                     {activeTab === 'shop' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
                             <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-                                <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                                <div className="p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-[#E85D04]/5 text-[#E85D04] rounded-xl flex items-center justify-center">
                                             <Tag className="w-5 h-5" />
                                         </div>
                                         <h2 className="text-xl font-black text-[#0F3024]">Service Pricing</h2>
                                     </div>
-                                    <button 
-                                        onClick={handleAddItem}
-                                        className="flex items-center gap-2 text-xs font-black text-[#E85D04] uppercase tracking-widest hover:text-[#cc5203] transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" /> Add Item
-                                    </button>
+                                    <div className="flex items-center gap-4">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search items..." 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="bg-gray-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-[#0F3024] focus:ring-2 focus:ring-[#E85D04]/20 outline-none w-48 placeholder:text-gray-400"
+                                        />
+                                        <button 
+                                            onClick={handleAddItem}
+                                            className="flex items-center gap-2 text-xs font-black text-[#E85D04] uppercase tracking-widest hover:text-[#cc5203] transition-colors shrink-0"
+                                        >
+                                            <Plus className="w-4 h-4" /> Add Item
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="divide-y divide-gray-50">
-                                    {config.items.map((item) => (
+                                    {config.items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase())).map((item) => (
                                         <div key={item.id} className="p-8 hover:bg-gray-50/50 transition-all group">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                                 <div className="flex items-center gap-4">
@@ -354,6 +377,75 @@ const AdminSettings = () => {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 🚚 TAB: DELIVERY CONFIG */}
+                    {activeTab === 'delivery' && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-3 mb-10">
+                                    <div className="w-12 h-12 bg-[#25D366]/5 text-[#25D366] rounded-2xl flex items-center justify-center">
+                                        <Truck className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-[#0F3024]">Delivery Settings</h2>
+                                        <p className="text-gray-400 text-sm font-medium">Configure dynamic kilometer-based delivery pricing.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-8 max-w-xl">
+                                    {/* Financials */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">Base Fee (₦)</label>
+                                            <input 
+                                                type="number" 
+                                                value={config?.delivery?.baseFee || 0}
+                                                onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, baseFee: parseFloat(e.target.value) || 0 } })}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-[#0F3024]/10 transition-all outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">Price Per KM (₦)</label>
+                                            <input 
+                                                type="number" 
+                                                value={config?.delivery?.pricePerKm || 0}
+                                                onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, pricePerKm: parseFloat(e.target.value) || 0 } })}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-[#0F3024]/10 transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Coordinates */}
+                                    <div className="pt-4 border-t border-gray-50">
+                                        <p className="text-xs font-black text-[#0F3024] uppercase tracking-widest mb-4">Company Location (Origin)</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] px-1">Latitude</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.00000001"
+                                                    value={config?.delivery?.companyLat || 0}
+                                                    onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, companyLat: parseFloat(e.target.value) || 0 } })}
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-[#0F3024]/10 transition-all outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] px-1">Longitude</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.00000001"
+                                                    value={config?.delivery?.companyLng || 0}
+                                                    onChange={(e) => setConfig({ ...config, delivery: { ...config.delivery, companyLng: parseFloat(e.target.value) || 0 } })}
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-[#0F3024]/10 transition-all outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-400 font-medium mt-4">These coordinates dictate the center point for calculating km-distance when users click "Use My Location".</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

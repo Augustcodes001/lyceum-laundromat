@@ -125,12 +125,15 @@ export default function Cart() {
     const [locationError, setLocationError] = useState('');
     const [isProfileChecking, setIsProfileChecking] = useState(true);
     const [shopStatus, setShopStatus] = useState({ isOpen: true, announcement: '' });
+    const [deliveryConfig, setDeliveryConfig] = useState(null);
 
-    // ── Fetch Shop Status ──
+    // ── Fetch Shop & Delivery Status ──
     useEffect(() => {
         const unsubscribe = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
             if (docSnap.exists()) {
-                setShopStatus(docSnap.data().shop || { isOpen: true, announcement: '' });
+                const data = docSnap.data();
+                setShopStatus(data.shop || { isOpen: true, announcement: '' });
+                setDeliveryConfig(data.delivery || { baseFee: 1500, pricePerKm: 200, companyLat: 6.3986, companyLng: 5.6179 });
             }
         });
         return () => unsubscribe();
@@ -235,7 +238,37 @@ export default function Cart() {
     }, [addrDescription]);
 
     const [userModifiedDelivery, setUserModifiedDelivery] = useState(false);
-    const deliveryFee = 1500;
+    
+    // ── Haversine Distance Calculator ──
+    const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return parseFloat((R * c).toFixed(2));
+    };
+
+    // Calculate Dynamic Delivery Fee
+    const distanceKm = useMemo(() => {
+        if (!mapPosition || !deliveryConfig) return null;
+        return calculateDistanceKm(
+            deliveryConfig.companyLat, 
+            deliveryConfig.companyLng, 
+            mapPosition.lat, 
+            mapPosition.lng
+        );
+    }, [mapPosition, deliveryConfig]);
+
+    const deliveryFee = useMemo(() => {
+        if (!deliveryConfig) return 1500;
+        if (distanceKm === null) return deliveryConfig.baseFee; // Fallback if no location
+        return deliveryConfig.baseFee + (distanceKm * deliveryConfig.pricePerKm);
+    }, [deliveryConfig, distanceKm]);
 
     // ── Smart 4-7 Day Delivery Logic ──
     const deliveryRange = useMemo(() => {
@@ -383,29 +416,36 @@ export default function Cart() {
         try {
             if (!auth.currentUser) throw new Error("Please log in to place an order.");
             
-            // 🌟 FIX: Sanitize the cart items to ensure NO undefined values exist
-            const sanitizedCartItems = cartItems.map(item => ({
-                id: item.id || "unknown",
-                name: item.name || "Unknown Item",
-                service: item.service || "",
-                price: item.price || 0,
-                qty: item.qty || 1,
-                image: item.image || null // 👈 This fixes the crash!
-            }));
+            // 🌟 FIX: Deeply sanitize all fields recursively to completely eliminate 'undefined'
+            // JSON stringify inherently ignores undefined keys. We convert them to null just in case.
+            const sanitizedCartItems = JSON.parse(JSON.stringify(cartItems, (k, v) => v === undefined ? null : v));
 
-            // 🌟 FIX: Sanitize all other fields just to be perfectly safe
-            const docRef = await addDoc(collection(db, "orders"), {
+            const orderPayload = {
                 userId: auth.currentUser.uid,
+                customerName: auth.currentUser.displayName || "Lyceum Member",
+                customerEmail: auth.currentUser.email || null,
                 items: sanitizedCartItems,
                 status: "Order Placed",
+                type: "online",
+                trackingId: "LY-" + Math.random().toString(36).substring(2, 6).toUpperCase() + Math.floor(Math.random() * 1000),
                 address: address || "",
                 description: addrDescription || "",
                 pickup: { date: pickupDate || "", time: pickupTime || "" },
                 delivery: { date: deliveryDate || "", time: deliveryTime || "" },
                 paymentMethod: paymentMethod || "",
                 total: total || 0,
-                createdAt: serverTimestamp()
-            });
+                deliveryFee: deliveryFee || 0,
+                distanceKm: distanceKm || 0,
+                deliveryFeeWaived: false,
+            };
+
+            // Stringify and parse to wipe out any rogue `undefined` values Firestore hates
+            const cleanPayload = JSON.parse(JSON.stringify(orderPayload));
+            
+            // Add serverTimestamp after sanitizing because it's a special object that stringify destroys
+            cleanPayload.createdAt = serverTimestamp();
+
+            const docRef = await addDoc(collection(db, "orders"), cleanPayload);
 
             // 🔥 TRIGGER RESEND + VERCEL EMAIL
             // We wrap this in a try/catch so if the email fails, it doesn't break the customer's order
