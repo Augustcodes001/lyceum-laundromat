@@ -44,7 +44,7 @@ const AdminFinance = () => {
     const [filter, setFilter] = useState('All'); // 'All' or 'Unverified'
     const [verifyingId, setVerifyingId] = useState(null);
     const [limitCount, setLimitCount] = useState(50);
-    const [showThisMonth, setShowThisMonth] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState('All');
 
     useEffect(() => {
         // ── Fetch Transactions ──
@@ -117,12 +117,12 @@ const AdminFinance = () => {
             const matchesFilter = filter === 'All' || 
                 (filter === 'Unverified' && tx.paymentStatus !== 'verified' && tx.paymentMethod === 'Bank Transfer');
 
-            const matchesMonth = !showThisMonth || 
-                (tx.dateObj && tx.dateObj.getMonth() === currentMonth && tx.dateObj.getFullYear() === currentYear);
+            const matchesMonth = selectedMonth === 'All' || 
+                (tx.dateObj && tx.dateObj.getMonth() === parseInt(selectedMonth) && tx.dateObj.getFullYear() === currentYear);
 
             return matchesSearch && matchesFilter && matchesMonth;
         });
-    }, [transactions, searchTerm, filter, showThisMonth]);
+    }, [transactions, searchTerm, filter, selectedMonth]);
 
     // ── Export Logic ──
     const handleExportCSV = () => {
@@ -176,12 +176,18 @@ const AdminFinance = () => {
                     <p className="text-gray-500 font-medium mt-1">Track revenue, payments, and financial distributions.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button 
-                        onClick={() => setShowThisMonth(!showThisMonth)}
-                        className={`flex items-center gap-2 border px-6 py-3 rounded-2xl text-sm font-bold transition-all ${showThisMonth ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm' : 'bg-white border-gray-200 text-[#0F3024] hover:bg-gray-50'}`}
+                    <select 
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className={`border px-4 py-3 rounded-2xl text-sm font-bold transition-all outline-none ${selectedMonth !== 'All' ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm' : 'bg-white border-gray-200 text-[#0F3024] hover:bg-gray-50'}`}
                     >
-                        <Calendar className="w-4 h-4" /> This Month
-                    </button>
+                        <option value="All">All Time</option>
+                        {Array.from({length: 12}).map((_, i) => (
+                            <option key={i} value={i}>
+                                {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                            </option>
+                        ))}
+                    </select>
                     <button 
                         onClick={handleExportCSV}
                         className="flex items-center gap-2 bg-[#0F3024] text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-xl shadow-[#0F3024]/20 hover:bg-[#0a2018] transition-all"

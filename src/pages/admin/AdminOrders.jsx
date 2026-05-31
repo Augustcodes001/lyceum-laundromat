@@ -274,7 +274,7 @@ const AdminOrders = () => {
                         {/* Panel Header */}
                         <div className="p-8 bg-[#0F3024] text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
-                            <button onClick={() => setSelectedOrderDetails(null)} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full transition-all">
+                            <button onClick={() => setSelectedOrderDetails(null)} className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full transition-all z-50 cursor-pointer">
                                 <X className="w-6 h-6" />
                             </button>
                             <div className="relative z-10">

@@ -192,7 +192,7 @@ function AppContent() {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      {showUserLayout && showSidebar && (
+      {showUserLayout && (
         <BottomNav
           onOpenAuth={(route) => {
             setPendingRoute(route);

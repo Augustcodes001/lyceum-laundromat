@@ -20,7 +20,8 @@ import {
     ExternalLink, 
     ArrowRight,
     Loader2,
-    Trash2
+    Trash2,
+    Search
 } from 'lucide-react';
 import ItemIcon from '../../components/ItemIcon';
 
@@ -48,6 +49,7 @@ const AdminWalkInPOS = () => {
     
     // ── Menu Mode State ──
     const [selections, setSelections] = useState({}); // { itemId: qty }
+    const [searchQuery, setSearchQuery] = useState(''); // Added search filter
     
     // ── Custom Mode State ──
     const [customDetails, setCustomDetails] = useState({ description: '', price: '' });
@@ -62,7 +64,7 @@ const AdminWalkInPOS = () => {
             return parseFloat(customDetails.price) || 0;
         }
         return Object.keys(selections).reduce((sum, key) => {
-            const [itemId, serviceId] = key.split('-');
+            const [itemId, serviceId] = key.split('__');
             const item = ITEMS_DATA.find(i => i.id === itemId);
             if (!item || !item.services[serviceId]) return sum;
             return sum + (item.services[serviceId] * selections[key]);
@@ -71,7 +73,7 @@ const AdminWalkInPOS = () => {
 
     // ── Handlers ──
     const updateQty = (itemId, serviceId, delta) => {
-        const key = `${itemId}-${serviceId}`;
+        const key = `${itemId}__${serviceId}`;
         setSelections(prev => {
             const nextVal = Math.max(0, (prev[key] || 0) + delta);
             const newState = { ...prev };
@@ -123,7 +125,7 @@ const AdminWalkInPOS = () => {
 
             if (pricingMode === 'menu') {
                 orderData.items = Object.keys(selections).map(key => {
-                    const [itemId, serviceId] = key.split('-');
+                    const [itemId, serviceId] = key.split('__');
                     const item = ITEMS_DATA.find(i => i.id === itemId);
                     return {
                         name: item.name,
@@ -321,20 +323,32 @@ const AdminWalkInPOS = () => {
                         <div className="flex-1">
                             {pricingMode === 'menu' ? (
                                 <div className="space-y-8">
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <h2 className="text-xl font-black text-[#0F3024] tracking-tight">Menu Services</h2>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setSelections({})}
-                                            className="text-gray-300 hover:text-red-500 transition-colors p-2"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative group">
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#0F3024] transition-colors" />
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Search item..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="bg-gray-50 border border-gray-100 pl-10 pr-4 py-2.5 rounded-[16px] text-xs font-bold focus:ring-[4px] focus:ring-[#0F3024]/5 outline-none transition-all w-full sm:w-[200px]" 
+                                                />
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setSelections({})}
+                                                className="text-gray-300 hover:text-red-500 bg-gray-50 hover:bg-red-50 transition-colors p-2.5 rounded-[16px]"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {ITEMS_DATA.map(item => {
-                                            const hasSelections = Object.keys(selections).some(key => key.startsWith(`${item.id}-`));
+                                        {ITEMS_DATA.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => {
+                                            const hasSelections = Object.keys(selections).some(key => key.startsWith(`${item.id}__`));
                                             return (
                                                 <div key={item.id} className={`p-5 rounded-[24px] border transition-all ${hasSelections ? 'bg-emerald-50/40 border-[#0F3024]/20 ring-2 ring-[#0F3024]/5' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
                                                     <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100/50">
@@ -353,7 +367,7 @@ const AdminWalkInPOS = () => {
                                                     <div className="space-y-3">
                                                         {Object.entries(item.services).map(([srvId, price]) => {
                                                             if (price <= 0) return null;
-                                                            const qty = selections[`${item.id}-${srvId}`] || 0;
+                                                            const qty = selections[`${item.id}__${srvId}`] || 0;
                                                             return (
                                                                 <div key={srvId} className="flex flex-col gap-2">
                                                                     <div className="flex items-center justify-between">

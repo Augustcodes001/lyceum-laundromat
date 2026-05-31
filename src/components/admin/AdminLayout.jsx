@@ -90,20 +90,20 @@ const AdminLayout = () => {
             </header>
 
             {/* 📱 Mobile Bottom Nav */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-3 flex justify-around items-center z-50 rounded-t-[32px] shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-1 py-2 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-8px_30px_rgb(0,0,0,0.04)] overflow-x-auto no-scrollbar">
                 {navLinks.map((link) => (
                     <NavLink
                         key={link.name}
                         to={link.path}
                         className={({ isActive }) => `
-                            flex flex-col items-center gap-1 p-2 rounded-2xl transition-all
+                            flex flex-col items-center justify-center gap-1 px-2 py-2 min-w-[60px] transition-all shrink-0
                             ${isActive ? 'text-[#E85D04]' : 'text-gray-400'}
                         `}
                     >
                         {({ isActive }) => (
                             <>
-                                <link.icon className={`w-6 h-6 ${isActive ? 'scale-110' : ''}`} />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{link.name}</span>
+                                <link.icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''}`} />
+                                <span className="text-[8px] font-bold uppercase tracking-wider truncate max-w-full text-center">{link.name}</span>
                             </>
                         )}
                     </NavLink>
