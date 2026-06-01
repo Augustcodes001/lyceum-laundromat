@@ -156,7 +156,7 @@ const AdminWalkInPOS = () => {
     };
 
     const handleCopyLink = () => {
-        const link = `https://lyceum-laundromat.vercel.app/track/${successData.trackingId}`;
+        const link = `${window.location.origin}/track/${successData.trackingId}`;
         navigator.clipboard.writeText(link);
         alert("Tracking link copied to clipboard!");
     };
@@ -170,7 +170,7 @@ const AdminWalkInPOS = () => {
 
     const [copied, setCopied] = useState(false);
 
-    const shareMessage = `Hi ${customer.name}, your Lyceum laundry order has been logged! Track your progress in real-time here: https://lyceum-laundromat.vercel.app/track/${successData?.trackingId}`;
+    const shareMessage = `Hi ${customer.name}, your Lyceum laundry order has been logged! Track your progress in real-time here: ${window.location.origin}/track/${successData?.trackingId}`;
 
     const handleCopyMessage = () => {
         navigator.clipboard.writeText(shareMessage);
@@ -234,7 +234,7 @@ const AdminWalkInPOS = () => {
                             Next Customer
                         </button>
                         <button 
-                            onClick={() => window.open(`https://lyceum-laundromat.vercel.app/track/${successData.trackingId}`, '_blank')}
+                            onClick={() => window.open(`${window.location.origin}/track/${successData.trackingId}`, '_blank')}
                             className="text-gray-400 font-bold text-xs uppercase tracking-[0.2em] hover:text-[#E85D04] transition-colors py-2"
                         >
                             Open Public Tracker
