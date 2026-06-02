@@ -164,8 +164,8 @@ function AppContent() {
           />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/track" element={<Track />} />
-          <Route path="/track/:id" element={<Track />} />
+          <Route path="/track" element={<Track isLoggedIn={isLoggedIn} onOpenAuth={() => setIsAuthModalOpen(true)} />} />
+          <Route path="/track/:id" element={<Track isLoggedIn={isLoggedIn} onOpenAuth={() => setIsAuthModalOpen(true)} />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Logged-In Routes */}
