@@ -236,6 +236,14 @@ export default function Track() {
                                         <span className="font-black">{order.customerPhone}</span>
                                     </div>
                                 )}
+                                {order.deliveryDate && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-emerald-400/80 font-bold uppercase tracking-widest text-[10px]">Expected Delivery</span>
+                                        <span className="font-black text-emerald-400">
+                                            {new Date(order.deliveryDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-white/40 font-bold uppercase tracking-widest text-[10px]">Total Order</span>
                                     <div className="flex flex-col items-end">

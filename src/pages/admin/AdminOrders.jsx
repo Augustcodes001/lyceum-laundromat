@@ -367,6 +367,48 @@ const AdminOrders = () => {
                                 </div>
                             </section>
 
+                            <section className="space-y-4 pt-4 border-t border-gray-100">
+                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Delivery Scheduling</h3>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Set Expected Delivery Date</label>
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="date" 
+                                            value={selectedOrderDetails.deliveryDate || ''}
+                                            onChange={async (e) => {
+                                                const newDate = e.target.value;
+                                                try {
+                                                    await updateDoc(doc(db, "orders", selectedOrderDetails.id), {
+                                                        deliveryDate: newDate || null
+                                                    });
+                                                    setSelectedOrderDetails(prev => ({ ...prev, deliveryDate: newDate || null }));
+                                                } catch (err) {
+                                                    console.error("Failed to update delivery date", err);
+                                                }
+                                            }}
+                                            className="bg-white border border-gray-200 px-4 py-3 rounded-2xl text-sm font-bold text-[#0F3024] focus:ring-2 focus:ring-[#E85D04]/20 outline-none w-full shadow-sm"
+                                        />
+                                        {selectedOrderDetails.deliveryDate && (
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        await updateDoc(doc(db, "orders", selectedOrderDetails.id), {
+                                                            deliveryDate: null
+                                                        });
+                                                        setSelectedOrderDetails(prev => ({ ...prev, deliveryDate: null }));
+                                                    } catch (err) {
+                                                        console.error("Failed to clear delivery date", err);
+                                                    }
+                                                }}
+                                                className="bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+
                             {/* Management Actions */}
                             <section className="space-y-4 pt-4">
                                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Lifecycle Management</h3>
