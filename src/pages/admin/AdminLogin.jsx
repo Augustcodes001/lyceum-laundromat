@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
-import { Lock, Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Lock, Mail, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
     const [error, setError] = useState('');
+    const [resetMessage, setResetMessage] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setResetMessage('');
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -36,6 +39,28 @@ const AdminLogin = () => {
             setError('Invalid credentials. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePasswordReset = async () => {
+        if (!email) {
+            setError('Please enter your email address above to receive a password reset link.');
+            return;
+        }
+
+        setResetLoading(true);
+        setError('');
+        setResetMessage('');
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            setResetMessage('A secure password reset link has been sent to your email.');
+        } catch (err) {
+            console.error("Password reset error:", err);
+            // Do not leak whether the admin email exists for security reasons
+            setResetMessage('If the email matches an admin account, a secure reset link will be sent.');
+        } finally {
+            setResetLoading(false);
         }
     };
 
@@ -73,6 +98,13 @@ const AdminLogin = () => {
                                 <span>{error}</span>
                             </div>
                         )}
+                        
+                        {resetMessage && (
+                            <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-3 rounded-2xl flex items-center gap-3 text-sm font-bold">
+                                <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                                <span>{resetMessage}</span>
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <label className="text-xs font-black text-[#0F3024] uppercase tracking-widest ml-1">Email Address</label>
@@ -90,7 +122,18 @@ const AdminLogin = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-[#0F3024] uppercase tracking-widest ml-1">Password</label>
+                            <div className="flex items-center justify-between ml-1">
+                                <label className="text-xs font-black text-[#0F3024] uppercase tracking-widest">Password</label>
+                                <button 
+                                    type="button" 
+                                    onClick={handlePasswordReset}
+                                    disabled={resetLoading}
+                                    className="text-xs font-bold text-[#E85D04] hover:text-[#cc5203] transition-colors disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    {resetLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : null}
+                                    Forgot Password?
+                                </button>
+                            </div>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#0F3024] transition-colors" />
                                 <input 
@@ -106,7 +149,7 @@ const AdminLogin = () => {
 
                         <button 
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || resetLoading}
                             className="w-full bg-[#E85D04] text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-orange-900/20 hover:bg-[#cc5203] hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-3"
                         >
                             {loading ? (
