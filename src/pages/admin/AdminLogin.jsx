@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { Lock, Mail, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -53,12 +53,29 @@ const AdminLogin = () => {
         setResetMessage('');
 
         try {
-            await sendPasswordResetEmail(auth, email);
-            setResetMessage('A secure password reset link has been sent to your email.');
+            // Pre-flight check: Ensure the email belongs to an admin
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('email', '==', email));
+            const querySnapshot = await getDocs(q);
+
+            let isAdmin = false;
+            querySnapshot.forEach((docSnap) => {
+                if (docSnap.data().role === 'admin') {
+                    isAdmin = true;
+                }
+            });
+
+            if (!isAdmin) {
+                // If not an admin, block the reset email directly
+                setError('Unauthorized: Email does not have admin privileges.');
+            } else {
+                // Sent only if confirmed as an admin role
+                await sendPasswordResetEmail(auth, email);
+                setResetMessage('A secure password reset link has been sent to your admin email.');
+            }
         } catch (err) {
             console.error("Password reset error:", err);
-            // Do not leak whether the admin email exists for security reasons
-            setResetMessage('If the email matches an admin account, a secure reset link will be sent.');
+            setError('Failed to process password reset request.');
         } finally {
             setResetLoading(false);
         }
