@@ -343,6 +343,39 @@ export default async function handler(req, res) {
         break;
       }
 
+      // 7. Admin Invite Confirmation — sent back to the Super Admin who sent the invite
+      case 'admin_invite_confirmation': {
+        const { adminEmail, invitedEmail, role: confirmRole, invitedAt } = payload;
+
+        emailData = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: adminEmail,
+          subject: `✅ Invite sent to ${invitedEmail} — Lyceum Admin`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:24px;">Team Invitation Sent</h1>
+                <p style="color:#E85D04;margin:6px 0 0;font-size:13px;">Lyceum Admin Portal</p>
+              </div>
+              <div style="background:#f9f9f9;padding:28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                <p style="font-size:15px;color:#333;">Hi there,</p>
+                <p style="font-size:15px;color:#444;">A team invitation was successfully dispatched from your account.</p>
+                <div style="background:white;padding:20px;border-radius:12px;border:1px solid #eee;margin:20px 0;">
+                  <p style="margin:0 0 8px;"><strong>Invite sent to:</strong> ${invitedEmail}</p>
+                  <p style="margin:0 0 8px;"><strong>Role assigned:</strong> ${confirmRole}</p>
+                  <p style="margin:0;color:#666;font-size:13px;">Sent at: ${invitedAt}</p>
+                </div>
+                <div style="background:#FFF8F0;border:1px solid #F9D4B6;border-radius:10px;padding:16px;margin-top:16px;">
+                  <p style="margin:0;font-size:14px;color:#8B4000;"><strong>⚠️ Wasn't you?</strong> If you did not send this invitation, please log in to the Lyceum Admin Portal immediately and contact support. The link expires in 48 hours.</p>
+                </div>
+                <p style="color:#999;font-size:12px;margin-top:24px;text-align:center;">This is an automated security notification from Lyceum Laundromat.</p>
+              </div>
+            </div>
+          `
+        });
+        break;
+      }
+
       default:
         return res.status(400).json({ error: `Unknown email type: ${type}` });
     }

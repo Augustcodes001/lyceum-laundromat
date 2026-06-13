@@ -44,19 +44,39 @@ export default function AdminAcceptInvite() {
                 const snap = await getDocs(q);
                 if (snap.empty) { setStatus('expired'); return; }
 
-                const inviteData = snap.docs[0].data();
-                const expires = inviteData.expiresAt?.toDate?.() || new Date(inviteData.expiresAt);
-                if (new Date() > expires) {
-                    await updateDoc(doc(db, 'adminInvites', snap.docs[0].id), { status: 'expired' });
+                const inviteDoc = snap.docs[0];
+                const inviteData = inviteDoc.data();
+
+                // Guard: must have an email to proceed
+                if (!inviteData?.email) {
+                    setStatus('expired');
+                    return;
+                }
+
+                // Safely convert Firestore Timestamp OR plain Date object
+                let expires;
+                const raw = inviteData.expiresAt;
+                if (raw?.toDate) {
+                    expires = raw.toDate();          // Firestore Timestamp
+                } else if (raw?.seconds) {
+                    expires = new Date(raw.seconds * 1000); // Timestamp-like object
+                } else if (raw instanceof Date) {
+                    expires = raw;
+                } else {
+                    expires = new Date(raw);          // string / number fallback
+                }
+
+                if (!expires || isNaN(expires.getTime()) || new Date() > expires) {
+                    await updateDoc(doc(db, 'adminInvites', inviteDoc.id), { status: 'expired' });
                     setStatus('expired');
                     return;
                 }
 
                 setInvite(inviteData);
-                setInviteDocId(snap.docs[0].id);
+                setInviteDocId(inviteDoc.id);
                 setStatus('ready');
             } catch (err) {
-                console.error(err);
+                console.error('Invite fetch error:', err);
                 setStatus('error');
             }
         };
@@ -144,6 +164,21 @@ export default function AdminAcceptInvite() {
                 <p className="text-emerald-100/60 mt-4 max-w-xs font-medium leading-relaxed">Your admin account is active. Log in now to access the Lyceum dashboard.</p>
                 <button onClick={() => navigate('/admin/login')} className="mt-10 bg-[#E85D04] text-white px-10 py-5 rounded-[24px] font-black shadow-2xl hover:scale-105 transition-all text-xs uppercase tracking-widest">
                     Log In to Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <div className="min-h-screen bg-[#0F3024] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-20 h-20 bg-orange-500/10 rounded-[32px] flex items-center justify-center mb-6 border border-orange-500/20">
+                    <AlertCircle className="w-10 h-10 text-orange-400" />
+                </div>
+                <h1 className="text-white font-black text-3xl tracking-tight mb-3">Something went wrong</h1>
+                <p className="text-emerald-100/60 max-w-xs font-medium">We couldn't load your invite. Please try clicking the link in your email again, or contact your admin.</p>
+                <button onClick={() => navigate('/admin/login')} className="mt-10 bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 transition-all text-xs uppercase tracking-widest">
+                    Back to Login
                 </button>
             </div>
         );

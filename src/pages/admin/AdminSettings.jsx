@@ -244,8 +244,11 @@ const AdminSettings = () => {
                 expiresAt
             });
 
-            // Trigger Email to Invitee
-            await fetch(`${import.meta.env.VITE_APP_URL || 'https://lyceumlaundromat.com.ng'}/api/send-email`, {
+            const apiBase = import.meta.env.VITE_APP_URL || 'https://lyceumlaundromat.com.ng';
+            const sentAt = new Date().toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' });
+
+            // 1. Email to the invited person
+            await fetch(`${apiBase}/api/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -260,16 +263,31 @@ const AdminSettings = () => {
                 })
             });
 
-            setMessage({ type: 'success', text: `Invitation sent to ${inviteEmail}!` });
+            // 2. Security confirmation back to the Super Admin
+            await fetch(`${apiBase}/api/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'admin_invite_confirmation',
+                    payload: {
+                        adminEmail: auth.currentUser.email,
+                        invitedEmail: inviteEmail.toLowerCase(),
+                        role: inviteRole,
+                        invitedAt: sentAt
+                    }
+                })
+            });
+
+            setMessage({ type: 'success', text: `✅ Invite sent to ${inviteEmail}! A confirmation has been sent to your email.` });
             setInviteEmail('');
             setInvitePermissions({ orders: true, finance: false, walkins: true, reviews: false, settings: false });
             setReceiveOrderEmails(false);
         } catch (err) {
             console.error("Invite Error:", err);
-            setMessage({ type: 'error', text: 'Failed to send invitation.' });
+            setMessage({ type: 'error', text: 'Failed to send invitation. Check your connection and try again.' });
         } finally {
             setInviting(false);
-            setTimeout(() => setMessage(null), 3000);
+            setTimeout(() => setMessage(null), 7000);
         }
     };
 
@@ -595,17 +613,17 @@ const AdminSettings = () => {
                                                     placeholder="colleague@lyceum.com"
                                                 />
                                             </div>
-                                            <div className="md:w-1/3 space-y-2">
-                                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Assign Role</label>
-                                                <select
-                                                    value={inviteRole}
-                                                    onChange={(e) => setInviteRole(e.target.value)}
-                                                    className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-[#E85D04] transition-all outline-none text-[#0F3024] cursor-pointer"
-                                                >
-                                                    <option value="admin">Administrator</option>
-                                                </select>
-                                                <p className="text-[10px] text-gray-400 px-1 font-medium mt-1">Super Admin assignment is disabled.</p>
-                                            </div>
+                                        <div class="space-y-2">
+                                                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Assign Role</label>
+                                                                <select
+                                                                    value={inviteRole}
+                                                                    onChange={(e) => setInviteRole(e.target.value)}
+                                                                    className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-4 text-sm font-bold focus:border-[#E85D04] transition-all outline-none text-[#0F3024] cursor-pointer"
+                                                                >
+                                                                    <option value="admin">Administrator</option>
+                                                                </select>
+                                                                <p className="text-[10px] text-gray-400 px-1 font-medium mt-1">Super Admin is disabled.</p>
+                                                            </div>
                                         </div>
 
                                         <div className="space-y-4 pt-4 border-t border-gray-200/60">
@@ -623,16 +641,16 @@ const AdminSettings = () => {
                                                 </label>
                                             </div>
 
-                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                 {Object.keys(invitePermissions).map(key => (
-                                                    <label key={key} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${invitePermissions[key] ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                                                    <label key={key} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${invitePermissions[key] ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
                                                         <input 
                                                             type="checkbox"
                                                             checked={invitePermissions[key]}
                                                             onChange={(e) => setInvitePermissions({...invitePermissions, [key]: e.target.checked})}
-                                                            className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" 
+                                                            className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 shrink-0" 
                                                         />
-                                                        <span className={`text-xs font-black uppercase tracking-wider ${invitePermissions[key] ? 'text-emerald-700' : 'text-gray-500'}`}>
+                                                        <span className={`text-xs font-black uppercase ${invitePermissions[key] ? 'text-emerald-700' : 'text-gray-500'}`}>
                                                             {key}
                                                         </span>
                                                     </label>
