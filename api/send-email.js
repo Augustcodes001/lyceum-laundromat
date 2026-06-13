@@ -4,7 +4,8 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'uwumiromoses@gmail.com';
+const rawAdminEmails = process.env.ADMIN_EMAIL || 'uwumiromoses@gmail.com';
+const ADMIN_EMAILS = rawAdminEmails.split(',').map(e => e.trim()).filter(e => e);
 
 // ✅ Once your domain is verified in Resend, update this to:
 // 'Lyceum Laundromat <noreply@yourdomain.com>'
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
         // Admin notification (always send this)
         await resend.emails.send({
           from: FROM_EMAIL,
-          to: ADMIN_EMAIL,
+          to: ADMIN_EMAILS,
           subject: `🧺 New Order #${orderId} from ${customerName}`,
           html: adminEmailHtml,
         });
@@ -140,7 +141,7 @@ export default async function handler(req, res) {
         // 1. Notify admin
         await resend.emails.send({
           from: FROM_EMAIL,
-          to: ADMIN_EMAIL,
+          to: ADMIN_EMAILS,
           replyTo: senderEmail,
           subject: `💬 New Support Message from ${senderEmail}`,
           html: `
@@ -198,7 +199,7 @@ export default async function handler(req, res) {
         // 1. Notify admin
         await resend.emails.send({
           from: FROM_EMAIL,
-          to: ADMIN_EMAIL,
+          to: ADMIN_EMAILS,
           subject: `📧 New Newsletter Subscriber: ${subscriberEmail}`,
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f9f9f9;border-radius:12px;">
@@ -246,7 +247,7 @@ export default async function handler(req, res) {
         const stars = '⭐'.repeat(rating);
         emailData = await resend.emails.send({
           from: FROM_EMAIL,
-          to: ADMIN_EMAIL,
+          to: ADMIN_EMAILS,
           subject: `${stars} New ${rating}-Star Review from ${reviewerName}`,
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">

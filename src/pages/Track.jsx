@@ -305,6 +305,33 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
                     </div>
                 )}
 
+                {/* ── Login / Navigation Prompt (Moved Up for better visibility) ── */}
+                {!isLoggedIn ? (
+                    <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-center text-center animate-in fade-in duration-700 delay-300">
+                        <div className="w-16 h-16 bg-[#0F3024]/5 rounded-full flex items-center justify-center mb-5 text-2xl">
+                            👋
+                        </div>
+                        <h3 className="text-xl font-black text-[#0F3024] mb-2 tracking-tight">Want a better experience?</h3>
+                        <p className="text-sm text-gray-500 font-medium mb-8 px-2 max-w-[280px]">Log in to view your complete order history, past receipts, and effortlessly book pickups.</p>
+                        <button 
+                            onClick={onOpenAuth}
+                            className="bg-[#0F3024] text-white px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-[#0a2018] shadow-2xl shadow-emerald-900/30 transition-all active:scale-95 w-full flex items-center justify-center gap-3"
+                        >
+                            Log In / Sign Up
+                        </button>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 text-center animate-in fade-in duration-500">
+                        <p className="text-[10px] text-gray-400 font-black mb-4 uppercase tracking-[0.2em]">Logged into Lyceum</p>
+                        <button 
+                            onClick={() => navigate('/orders')}
+                            className="bg-gray-50 text-[#0F3024] px-8 py-4 border border-gray-200 rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95 w-full"
+                        >
+                            View Full Dashboard
+                        </button>
+                    </div>
+                )}
+
                 {/* ── Recent Tracks ── */}
                 {recentTracks.length > 0 && (
                     <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100">
@@ -329,33 +356,6 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {/* ── Login / Navigation Prompt ── */}
-                {!isLoggedIn ? (
-                    <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-center text-center animate-in fade-in duration-700 delay-300">
-                        <div className="w-16 h-16 bg-[#0F3024]/5 rounded-full flex items-center justify-center mb-5 text-2xl">
-                            👋
-                        </div>
-                        <h3 className="text-xl font-black text-[#0F3024] mb-2 tracking-tight">Want a better experience?</h3>
-                        <p className="text-sm text-gray-500 font-medium mb-8 px-2 max-w-[280px]">Log in to view your complete order history, past receipts, and effortlessly book pickups.</p>
-                        <button 
-                            onClick={onOpenAuth}
-                            className="bg-[#0F3024] text-white px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-[#0a2018] shadow-2xl shadow-emerald-900/30 transition-all active:scale-95 w-full flex items-center justify-center gap-3"
-                        >
-                            Log In / Sign Up
-                        </button>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 text-center animate-in fade-in duration-500">
-                        <p className="text-[10px] text-gray-400 font-black mb-4 uppercase tracking-[0.2em]">Logged into Lyceum</p>
-                        <button 
-                            onClick={() => navigate('/orders')}
-                            className="bg-gray-50 text-[#0F3024] px-8 py-4 border border-gray-200 rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95 w-full"
-                        >
-                            View Full Dashboard
-                        </button>
                     </div>
                 )}
             </div>

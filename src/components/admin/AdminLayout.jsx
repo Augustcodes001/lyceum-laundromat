@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, 
@@ -12,7 +12,8 @@ import {
     Star
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
@@ -26,6 +27,30 @@ const AdminLayout = () => {
             console.error("Logout failed:", error);
         }
     };
+
+    const audioRef = useRef(null);
+    const initialLoadRef = useRef(true);
+
+    useEffect(() => {
+        // Initialize the audio ping
+        audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        
+        // Listen to the orders collection for any 'added' events
+        const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
+            if (initialLoadRef.current) {
+                initialLoadRef.current = false;
+                return; // Prevent sound spam on first load
+            }
+            
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    audioRef.current?.play().catch(e => console.warn("Browser blocked auto-play audio:", e));
+                }
+            });
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const navLinks = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
