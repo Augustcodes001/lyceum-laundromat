@@ -810,7 +810,7 @@ const AdminSettings = () => {
                                                         <div className={`px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${adm.role === 'super_admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                                                             {adm.role === 'super_admin' ? 'Super Admin' : 'Admin'}
                                                         </div>
-                                                        {adminProfile?.role === 'super_admin' && adm.role !== 'super_admin' && (
+                                                        {isSuperAdmin && adm.role !== 'super_admin' && (
                                                             <button
                                                                 onClick={() => handleRemoveAdmin(adm.id, adm.email)}
                                                                 disabled={revoking === adm.id}
