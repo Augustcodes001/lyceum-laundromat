@@ -30,6 +30,7 @@ export default function AdminAcceptInvite() {
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [isExistingAccount, setIsExistingAccount] = useState(false);
 
     useEffect(() => {
         if (!token) { setStatus('expired'); return; }
@@ -92,9 +93,41 @@ export default function AdminAcceptInvite() {
         setErrorMsg('');
 
         try {
-            // Path A: Brand new account
-            const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
-            const uid = cred.user.uid;
+            let uid;
+            
+            if (isExistingAccount) {
+                 // They reset their password and came back, or they are just trying again. Sign them in.
+                 const cred = await signInWithEmailAndPassword(auth, invite.email, password);
+                 uid = cred.user.uid;
+            } else {
+                 try {
+                     // Path A: Brand new account
+                     const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
+                     uid = cred.user.uid;
+                 } catch (createErr) {
+                     if (createErr.code === 'auth/email-already-in-use') {
+                         setIsExistingAccount(true); // Flag them for next time
+                         // Path B: Existing account — send password reset so they start fresh
+                         try {
+                             await sendPasswordResetEmail(auth, invite.email);
+                             setStatus('reset_sent');
+                             setIsSubmitting(false);
+                             return; // Stop execution, await user return
+                         } catch (resetErr) {
+                             console.error('Reset error:', resetErr);
+                             setErrorMsg('Could not send password reset email. Please contact your admin.');
+                             setIsSubmitting(false);
+                             return;
+                         }
+                     } else if (createErr.code === 'auth/too-many-requests') {
+                          setErrorMsg('Too many attempts. Please wait a moment and try again.');
+                          setIsSubmitting(false);
+                          return;
+                     } else {
+                         throw createErr;
+                     }
+                 }
+            }
 
             await setDoc(doc(db, 'adminUsers', uid), {
                 uid,
@@ -119,15 +152,8 @@ export default function AdminAcceptInvite() {
             setStatus('success');
         } catch (err) {
             console.error(err);
-            if (err.code === 'auth/email-already-in-use') {
-                // Path B: Existing account — send password reset so they start fresh
-                try {
-                    await sendPasswordResetEmail(auth, invite.email);
-                    setStatus('reset_sent');
-                } catch (resetErr) {
-                    console.error('Reset error:', resetErr);
-                    setErrorMsg('Could not send password reset email. Please contact your admin.');
-                }
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setErrorMsg('Incorrect password. If you just reset it, ensure you typed it correctly.');
             } else if (err.code === 'auth/too-many-requests') {
                 setErrorMsg('Too many attempts. Please wait a moment and try again.');
             } else {
