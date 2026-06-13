@@ -53,29 +53,21 @@ const AdminLogin = () => {
         setResetMessage('');
 
         try {
-            // Pre-flight check: Ensure the email belongs to an admin
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('email', '==', email));
-            const querySnapshot = await getDocs(q);
-
-            let isAdmin = false;
-            querySnapshot.forEach((docSnap) => {
-                if (docSnap.data().role === 'admin') {
-                    isAdmin = true;
-                }
-            });
-
-            if (!isAdmin) {
-                // If not an admin, block the reset email directly
-                setError('Unauthorized: Email does not have admin privileges.');
-            } else {
-                // Sent only if confirmed as an admin role
-                await sendPasswordResetEmail(auth, email);
-                setResetMessage('A secure password reset link has been sent to your admin email.');
-            }
+            // We do not query the 'users' collection here because unauthenticated 
+            // users will get a Firestore permissions error. We rely on standard Auth.
+            // If they reset and log in, handleLogin will still block non-admins.
+            await sendPasswordResetEmail(auth, email);
+            setResetMessage('If an account exists, a secure reset link has been sent.');
         } catch (err) {
             console.error("Password reset error:", err);
-            setError('Failed to process password reset request.');
+            if (err.code === 'auth/user-not-found') {
+                // Prevent email enumeration attacks by showing a success message anyway
+                setResetMessage('If an account exists, a secure reset link has been sent.');
+            } else if (err.code === 'auth/invalid-email') {
+                setError('Please enter a valid email address.');
+            } else {
+                setError('Failed to process password reset request.');
+            }
         } finally {
             setResetLoading(false);
         }
