@@ -9,7 +9,8 @@ import {
     where, 
     addDoc, 
     updateDoc,
-    serverTimestamp 
+    serverTimestamp,
+    deleteDoc
 } from 'firebase/firestore';
 import { 
     reauthenticateWithCredential, 
@@ -319,7 +320,25 @@ const AdminSettings = () => {
             setTimeout(() => setMessage(null), 5000);
         } catch (err) {
             console.error('Revoke error:', err);
-            setMessage({ type: 'error', text: 'Failed to revoke invite. Try again.' });
+            setMessage({ type: 'error', text: 'Failed to revoke invite.' });
+            setTimeout(() => setMessage(null), 5000);
+        } finally {
+            setRevoking(null);
+        }
+    };
+
+    // ── Logic: Remove Admin ──
+    const handleRemoveAdmin = async (adminId, adminEmail) => {
+        if (!window.confirm(`Are you sure you want to permanently remove admin access for ${adminEmail}?`)) return;
+        setRevoking(adminId); // reuse revoking state for loading UI
+        try {
+            await deleteDoc(doc(db, 'adminUsers', adminId));
+            setMessage({ type: 'success', text: `Admin access revoked for ${adminEmail}.` });
+            setTimeout(() => setMessage(null), 5000);
+        } catch (err) {
+            console.error('Revoke admin error:', err);
+            setMessage({ type: 'error', text: 'Failed to remove admin account. Check permissions.' });
+            setTimeout(() => setMessage(null), 5000);
         } finally {
             setRevoking(null);
         }
@@ -791,6 +810,16 @@ const AdminSettings = () => {
                                                         <div className={`px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${adm.role === 'super_admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                                                             {adm.role === 'super_admin' ? 'Super Admin' : 'Admin'}
                                                         </div>
+                                                        {adminProfile?.role === 'super_admin' && adm.role !== 'super_admin' && (
+                                                            <button
+                                                                onClick={() => handleRemoveAdmin(adm.id, adm.email)}
+                                                                disabled={revoking === adm.id}
+                                                                title="Revoke Admin Access"
+                                                                className="absolute top-0 right-0 mt-2 mr-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                                            >
+                                                                {revoking === adm.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                            </button>
+                                                        )}
                                                     </div>
 
                                                     {/* Role Chips */}
