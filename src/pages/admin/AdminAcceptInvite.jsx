@@ -224,8 +224,8 @@ export default function AdminAcceptInvite() {
                 </div>
                 <h1 className="text-white font-black text-4xl tracking-tight">Welcome Aboard!</h1>
                 <p className="text-emerald-100/60 mt-4 max-w-xs font-medium leading-relaxed">Your admin account is active. Log in now to access the Lyceum dashboard.</p>
-                <button onClick={() => navigate('/admin/login')} className="mt-10 bg-[#E85D04] text-white px-10 py-5 rounded-[24px] font-black shadow-2xl hover:scale-105 transition-all text-xs uppercase tracking-widest">
-                    Log In to Dashboard
+                <button onClick={() => navigate('/admin')} className="mt-10 bg-[#E85D04] text-white px-10 py-5 rounded-[24px] font-black shadow-2xl hover:scale-105 transition-all text-xs uppercase tracking-widest">
+                    Go to Dashboard
                 </button>
             </div>
         );

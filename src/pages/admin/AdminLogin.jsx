@@ -24,11 +24,12 @@ const AdminLogin = () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Check if user is an admin in Firestore
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            // Check if user is an admin in the dedicated adminUsers collection
+            const adminDoc = await getDoc(doc(db, 'adminUsers', user.uid));
             
-            if (userDoc.exists() && userDoc.data().role === 'admin') {
-                navigate('/admin/dashboard');
+            if (adminDoc.exists() && ['admin', 'super_admin'].includes(adminDoc.data().role)) {
+                // Also ensures we use the correct dashboard route (with or without /dashboard depending on your router)
+                navigate('/admin');
             } else {
                 // If not admin, sign them out immediately
                 await signOut(auth);
