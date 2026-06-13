@@ -80,7 +80,7 @@ export default function SupportWidget() {
           <div className="p-5 flex flex-col gap-5">
             {/* WhatsApp Button */}
             <a
-              href="https://wa.me/234XXXXXXXXXX" // <-- Replace with your actual Lyceum WhatsApp number
+              href="https://wa.me/2347085004780" 
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 w-full bg-[#25D366] hover:bg-[#20b858] text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 transition-all hover:-translate-y-0.5"
