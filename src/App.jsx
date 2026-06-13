@@ -58,7 +58,7 @@ function AppContent() {
   const isHomePage = location.pathname === '/';
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/track');
   const isAdminPath = location.pathname.startsWith('/admin');
-  const isOrderSuccessPage = location.pathname === '/order-success'; // 🌟 NEW RULE 
+  const isOrderSuccessPage = location.pathname === '/order-success'; 
 
   // Show sidebar ONLY if logged in, NOT on a public route, and NOT on admin
   const showSidebar = isLoggedIn && !isPublicRoute && !isAdminPath;

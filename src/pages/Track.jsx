@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
     Search, 
@@ -61,42 +61,67 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
         setError('');
         setOrder(null);
 
-        const q = query(collection(db, "orders"), where("trackingId", "==", id));
+        const handleSuccess = (newOrder) => {
+            // Flash "updated" indicator when status changes after first load
+            setOrder(prev => {
+                if (prev && prev.status !== newOrder.status) {
+                    setJustUpdated(true);
+                    setTimeout(() => setJustUpdated(false), 3000);
+                }
+                return newOrder;
+            });
 
-        const unsub = onSnapshot(q, (snapshot) => {
-            setLoading(false);
-            if (snapshot.empty) {
-                setError("Order not found. Please check your tracking ID.");
-                setOrder(null);
-            } else {
-                const newOrder = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+            // Save to recent searches
+            setRecentTracks(prev => {
+                if (!prev.includes(id)) {
+                    const updated = [id, ...prev].slice(0, 5);
+                    localStorage.setItem('lyceum_recent_tracks', JSON.stringify(updated));
+                    return updated;
+                }
+                return prev;
+            });
+        };
 
-                // Flash "updated" indicator when status changes after first load
-                setOrder(prev => {
-                    if (prev && prev.status !== newOrder.status) {
-                        setJustUpdated(true);
-                        setTimeout(() => setJustUpdated(false), 3000);
-                    }
-                    return newOrder;
-                });
-
-                // Save to recent searches
-                setRecentTracks(prev => {
-                    if (!prev.includes(id)) {
-                        const updated = [id, ...prev].slice(0, 5);
-                        localStorage.setItem('lyceum_recent_tracks', JSON.stringify(updated));
-                        return updated;
-                    }
-                    return prev;
-                });
-            }
-        }, (err) => {
+        const handleError = (err) => {
             console.error("Track listener error:", err);
             setLoading(false);
-            setError("Something went wrong. Please try again.");
-        });
+            if (err.code === 'permission-denied') {
+                setError("Access Denied. Ask Admin to open Firebase rules.");
+            } else {
+                setError("Something went wrong. Please try again.");
+            }
+        };
 
-        unsubRef.current = unsub;
+        // Determine if they used a direct Vercel Share Link (Doc ID) or manual typed code (LY-...)
+        const isDocumentId = id.length > 15 && !id.includes('-');
+
+        if (isDocumentId) {
+            // Direct Document Real-Time Fetch (Bypasses collection-level security sweeps)
+            const unsub = onSnapshot(doc(db, "orders", id), (docSnap) => {
+                setLoading(false);
+                if (!docSnap.exists()) {
+                    setError("Order not found or invalid reference.");
+                    setOrder(null);
+                } else {
+                    handleSuccess({ id: docSnap.id, ...docSnap.data() });
+                }
+            }, handleError);
+            unsubRef.current = unsub;
+        } else {
+            // Manual Custom Tracking Code (LY-ABCD) fetch
+            const q = query(collection(db, "orders"), where("trackingId", "==", id));
+            const unsub = onSnapshot(q, (snapshot) => {
+                setLoading(false);
+                if (snapshot.empty) {
+                    setError("Order not found. Please check your tracking ID.");
+                    setOrder(null);
+                } else {
+                    const docSnap = snapshot.docs[0];
+                    handleSuccess({ id: docSnap.id, ...docSnap.data() });
+                }
+            }, handleError);
+            unsubRef.current = unsub;
+        }
     };
 
     const handleTrackSubmit = (e) => {
@@ -123,49 +148,53 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-28 font-sans">
+        <div className="bg-gray-50/50 min-h-screen pb-28 font-sans">
             {/* ── Header ── */}
-            <div className="bg-[#0F3024] pt-12 pb-16 px-6 shadow-sm sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                    </button>
-                    <h1 className="text-xl font-extrabold text-white tracking-wide border-l border-white/20 pl-4 py-1">Track Order</h1>
-                    {order && (
-                        <span className="ml-auto flex items-center gap-1.5 text-[10px] font-black text-emerald-300 uppercase tracking-widest">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            <div className="relative pt-16 pb-24 px-6 overflow-hidden">
+                <div className="absolute inset-0 bg-[#0F3024]"></div>
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#E85D04]/20 rounded-full blur-3xl -mr-32 -mt-32 mix-blend-overlay"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -ml-20 -mb-20 mix-blend-overlay"></div>
+                
+                <div className="relative z-10 flex flex-col gap-4 max-w-md mx-auto">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all backdrop-blur-md border border-white/5">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <h1 className="text-2xl font-black text-white tracking-tight border-l-2 border-[#E85D04]/60 pl-4 py-1">Order Tracking</h1>
+                        {order && (
+                            <span className="ml-auto flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/30">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                                </span>
+                                Live
                             </span>
-                            Live
-                        </span>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-md mx-auto px-4 -mt-8 relative z-40 space-y-6">
+            <div className="max-w-md mx-auto px-4 -mt-12 relative z-40 space-y-8">
 
                 {/* ── Search Card ── */}
-                <div className="bg-white rounded-[32px] p-6 shadow-xl shadow-gray-200/50 border border-gray-100/50">
-                    <div className="w-16 h-16 bg-[#E85D04]/10 text-[#E85D04] rounded-full flex items-center justify-center mb-6 mx-auto">
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                <div className="bg-white/80 backdrop-blur-xl rounded-[40px] p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#E85D04] to-orange-400 text-white rounded-full flex items-center justify-center mb-6 mx-auto shadow-lg shadow-orange-500/30">
+                        <Search className="w-7 h-7" />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-[#0F3024] text-center mb-2">Locate your laundry</h2>
-                    <p className="text-sm text-gray-500 text-center mb-8">Enter your LY-XXXX reference code to track your order in real time.</p>
+                    <h2 className="text-3xl font-black text-[#0F3024] text-center mb-2 tracking-tight">Locate laundry</h2>
+                    <p className="text-[14px] text-gray-500 text-center mb-8 font-medium">Enter your tracking code or 20-character reference ID to receive live status updates.</p>
                     
                     <form onSubmit={handleTrackSubmit} className="space-y-4">
                         <input 
                             value={trackingId} 
                             onChange={(e) => setTrackingId(e.target.value)} 
                             placeholder="LY-ABCD" 
-                            className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 text-center text-lg font-extrabold text-[#0F3024] tracking-widest uppercase focus:border-[#E85D04] focus:ring-4 focus:ring-[#E85D04]/10 outline-none transition-all"
+                            className="w-full bg-gray-50 border-2 border-gray-100 rounded-[20px] px-6 py-5 text-center text-lg font-extrabold text-[#0F3024] tracking-widest uppercase focus:border-[#E85D04] focus:ring-4 focus:ring-[#E85D04]/10 focus:bg-white outline-none transition-all placeholder:text-gray-300"
                         />
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className="w-full bg-[#E85D04] text-white py-4 rounded-2xl font-bold shadow-[0_8px_20px_rgba(232,93,4,0.25)] hover:bg-[#d15303] transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-[#E85D04] text-white py-5 rounded-[20px] font-black group shadow-[0_10px_30px_rgba(232,93,4,0.25)] hover:shadow-[0_15px_35px_rgba(232,93,4,0.35)] hover:-translate-y-1 hover:bg-[#d15303] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:hover:translate-y-0"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
                             Track Now
@@ -307,18 +336,23 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
 
                 {/* ── Login / Navigation Prompt (Moved Up for better visibility) ── */}
                 {!isLoggedIn ? (
-                    <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-center text-center animate-in fade-in duration-700 delay-300">
-                        <div className="w-16 h-16 bg-[#0F3024]/5 rounded-full flex items-center justify-center mb-5 text-2xl">
-                            👋
+                    <div className="bg-[#0F3024] relative overflow-hidden rounded-[40px] p-8 sm:p-10 shadow-2xl flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-5 duration-700 delay-300">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
+                        <div className="absolute bottom-0 left-0 w-40 h-40 bg-[#E85D04]/20 rounded-full blur-2xl -ml-16 -mb-16"></div>
+                        
+                        <div className="relative z-10 w-full">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6 text-3xl shadow-inner border border-white/5 mx-auto backdrop-blur-md">
+                                ✨
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-3 tracking-tight">Unlock Premium Care</h3>
+                            <p className="text-[14px] text-emerald-100/70 font-medium mb-8 px-2 max-w-[280px] leading-relaxed mx-auto">Get full access to your order history, direct customer support, and seamless pickup bookings.</p>
+                            <button 
+                                onClick={onOpenAuth}
+                                className="bg-[#E85D04] text-white px-8 py-5 rounded-[24px] font-black text-xs uppercase tracking-widest hover:bg-[#d15303] hover:scale-105 shadow-[0_10px_30px_rgba(232,93,4,0.3)] transition-all active:scale-95 w-full flex items-center justify-center gap-3"
+                            >
+                                Log In / Sign Up
+                            </button>
                         </div>
-                        <h3 className="text-xl font-black text-[#0F3024] mb-2 tracking-tight">Want a better experience?</h3>
-                        <p className="text-sm text-gray-500 font-medium mb-8 px-2 max-w-[280px]">Log in to view your complete order history, past receipts, and effortlessly book pickups.</p>
-                        <button 
-                            onClick={onOpenAuth}
-                            className="bg-[#0F3024] text-white px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-[#0a2018] shadow-2xl shadow-emerald-900/30 transition-all active:scale-95 w-full flex items-center justify-center gap-3"
-                        >
-                            Log In / Sign Up
-                        </button>
                     </div>
                 ) : (
                     <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 text-center animate-in fade-in duration-500">

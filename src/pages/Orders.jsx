@@ -122,7 +122,7 @@ export default function Orders({ isLoggedIn, onOpenAuth }) {
 
     const handleCopyLink = (e, orderId) => {
         e.stopPropagation();
-        const shareLink = `${window.location.origin}/orders?id=${orderId}`;
+        const shareLink = `${window.location.origin}/track/${orderId}`;
         navigator.clipboard.writeText(shareLink);
         setCopySuccessId(orderId);
         setTimeout(() => setCopySuccessId(null), 2000);
