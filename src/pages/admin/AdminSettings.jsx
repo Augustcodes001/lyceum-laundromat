@@ -60,6 +60,9 @@ const AdminSettings = () => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    // ── Custom Modal State ──
+    const [confirmState, setConfirmState] = useState({ isOpen: false, type: null, targetId: null, targetEmail: null });
     const [authLoading, setAuthLoading] = useState(false);
 
     // ── Team Tab State ──
@@ -307,8 +310,11 @@ const AdminSettings = () => {
     };
 
     // ── Logic: Revoke Pending Invite ──
-    const handleRevokeInvite = async (inviteId, inviteEmail) => {
-        if (!window.confirm(`Revoke the invite sent to ${inviteEmail}? The link will stop working immediately.`)) return;
+    const handleRevokeInvite = (inviteId, inviteEmail) => {
+        setConfirmState({ isOpen: true, type: 'revoke', targetId: inviteId, targetEmail: inviteEmail });
+    };
+
+    const executeRevokeInvite = async (inviteId, inviteEmail) => {
         setRevoking(inviteId);
         try {
             await updateDoc(doc(db, 'adminInvites', inviteId), {
@@ -324,12 +330,16 @@ const AdminSettings = () => {
             setTimeout(() => setMessage(null), 5000);
         } finally {
             setRevoking(null);
+            setConfirmState({ isOpen: false, type: null, targetId: null, targetEmail: null });
         }
     };
 
     // ── Logic: Remove Admin ──
-    const handleRemoveAdmin = async (adminId, adminEmail) => {
-        if (!window.confirm(`Are you sure you want to permanently remove admin access for ${adminEmail}?`)) return;
+    const handleRemoveAdmin = (adminId, adminEmail) => {
+        setConfirmState({ isOpen: true, type: 'remove', targetId: adminId, targetEmail: adminEmail });
+    };
+
+    const executeRemoveAdmin = async (adminId, adminEmail) => {
         setRevoking(adminId); // reuse revoking state for loading UI
         try {
             await deleteDoc(doc(db, 'adminUsers', adminId));
@@ -341,6 +351,7 @@ const AdminSettings = () => {
             setTimeout(() => setMessage(null), 5000);
         } finally {
             setRevoking(null);
+            setConfirmState({ isOpen: false, type: null, targetId: null, targetEmail: null });
         }
     };
 
@@ -897,6 +908,48 @@ const AdminSettings = () => {
                 </div>
 
             </div>
+
+            {/* 🛑 CONFIRMATION MODAL */}
+            {confirmState.isOpen && (
+                <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-[24px] p-6 w-full max-w-sm shadow-2xl text-center">
+                        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                            <AlertCircle className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-xl font-black text-[#0F3024] mb-2">
+                            {confirmState.type === 'revoke' ? 'Revoke Invite?' : 'Remove Admin?'}
+                        </h2>
+                        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                            {confirmState.type === 'revoke' 
+                                ? (
+                                    <>Are you sure you want to revoke the invite for <span className="font-bold text-[#0F3024]">{confirmState.targetEmail}</span>? The link will stop working immediately.</>
+                                ) : (
+                                    <>Are you sure you want to permanently remove admin access for <span className="font-bold text-[#0F3024]">{confirmState.targetEmail}</span>?</>
+                                )}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmState({ isOpen: false, type: null, targetId: null, targetEmail: null })}
+                                className="flex-1 bg-gray-100 text-[#0F3024] py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirmState.type === 'revoke') {
+                                        executeRevokeInvite(confirmState.targetId, confirmState.targetEmail);
+                                    } else {
+                                        executeRemoveAdmin(confirmState.targetId, confirmState.targetEmail);
+                                    }
+                                }}
+                                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                            >
+                                {confirmState.type === 'revoke' ? 'Revoke' : 'Remove'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
