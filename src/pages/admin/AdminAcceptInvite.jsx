@@ -5,7 +5,7 @@ import {
     collection, query, where, getDocs,
     doc, setDoc, updateDoc, serverTimestamp
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, Lock, User } from 'lucide-react';
 
@@ -92,24 +92,10 @@ export default function AdminAcceptInvite() {
         setErrorMsg('');
 
         try {
-            let uid;
+            // Path A: Brand new account
+            const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
+            const uid = cred.user.uid;
 
-            try {
-                // Path A: Brand new account (fresh email)
-                const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
-                uid = cred.user.uid;
-            } catch (createErr) {
-                if (createErr.code === 'auth/email-already-in-use') {
-                    // Path B: Email already exists (e.g., existing customer account)
-                    // Sign them in with the password they provided
-                    const cred = await signInWithEmailAndPassword(auth, invite.email, password);
-                    uid = cred.user.uid;
-                } else {
-                    throw createErr; // Rethrow any other auth errors
-                }
-            }
-
-            // Write / overwrite admin profile to /adminUsers
             await setDoc(doc(db, 'adminUsers', uid), {
                 uid,
                 email: invite.email,
@@ -124,7 +110,6 @@ export default function AdminAcceptInvite() {
                 status: 'active',
             });
 
-            // Mark invite as accepted
             await updateDoc(doc(db, 'adminInvites', inviteDocId), {
                 status: 'accepted',
                 acceptedAt: serverTimestamp(),
@@ -134,8 +119,15 @@ export default function AdminAcceptInvite() {
             setStatus('success');
         } catch (err) {
             console.error(err);
-            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                setErrorMsg('This email already has an account. The password you entered is incorrect — please use your existing Lyceum password.');
+            if (err.code === 'auth/email-already-in-use') {
+                // Path B: Existing account — send password reset so they start fresh
+                try {
+                    await sendPasswordResetEmail(auth, invite.email);
+                    setStatus('reset_sent');
+                } catch (resetErr) {
+                    console.error('Reset error:', resetErr);
+                    setErrorMsg('Could not send password reset email. Please contact your admin.');
+                }
             } else if (err.code === 'auth/too-many-requests') {
                 setErrorMsg('Too many attempts. Please wait a moment and try again.');
             } else {
@@ -164,6 +156,35 @@ export default function AdminAcceptInvite() {
                 <p className="text-emerald-100/60 max-w-xs font-medium">This invitation link is invalid or has expired. Please ask your admin to resend it.</p>
                 <button onClick={() => navigate('/admin/login')} className="mt-10 bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 transition-all text-xs uppercase tracking-widest">
                     Go to Admin Login
+                </button>
+            </div>
+        );
+    }
+
+    if (status === 'reset_sent') {
+        return (
+            <div className="min-h-screen bg-[#0F3024] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-24 h-24 bg-amber-500/20 rounded-[40px] flex items-center justify-center mb-8 border border-amber-500/30">
+                    <CheckCircle2 className="w-12 h-12 text-amber-400" />
+                </div>
+                <h1 className="text-white font-black text-3xl tracking-tight mb-3">Check Your Email</h1>
+                <p className="text-emerald-100/60 mt-2 max-w-sm font-medium leading-relaxed">
+                    We detected that <span className="text-white font-bold">{invite?.email}</span> already has a Lyceum account.
+                    <br /><br />
+                    We've sent a <strong className="text-amber-400">password reset link</strong> to that address. 
+                    Reset your password, then come back to this invite link and set up your account with your new password.
+                </p>
+                <div className="mt-8 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 max-w-xs">
+                    <p className="text-emerald-400/80 text-[11px] font-bold uppercase tracking-widest">Steps</p>
+                    <ol className="text-white/70 text-sm font-medium mt-3 space-y-2 text-left list-decimal list-inside">
+                        <li>Open the reset email from Firebase</li>
+                        <li>Set a new password</li>
+                        <li>Return to this invite link</li>
+                        <li>Enter your new password here</li>
+                    </ol>
+                </div>
+                <button onClick={() => setStatus('ready')} className="mt-8 bg-white/10 border border-white/10 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 transition-all text-xs uppercase tracking-widest">
+                    ← I've Reset My Password
                 </button>
             </div>
         );
