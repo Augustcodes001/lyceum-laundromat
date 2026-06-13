@@ -142,7 +142,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
                   Dashboard
                 </Link>
               ) : (
-                <button onClick={() => onOpenAuth()} className="bg-[#E85D04] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-[#cc5203] transition-colors whitespace-nowrap">
+                <button onClick={() => onOpenAuth()} className="bg-[#0F3024] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:bg-[#1a4a38] transition-colors whitespace-nowrap">
                   Log in
                 </button>
               )}
@@ -246,7 +246,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
                   setIsHamburgerOpen(false);
                   onOpenAuth();
                 }}
-                className="w-full bg-[#E85D04] text-white py-3.5 rounded-full font-bold text-[16px] shadow-md hover:bg-[#cc5203] transition-colors mb-3"
+                className="w-full bg-[#0F3024] text-white py-3.5 rounded-full font-bold text-[16px] shadow-md hover:bg-[#1a4a38] transition-colors mb-3"
               >
                 Sign Up / Log In
               </button>
