@@ -108,7 +108,7 @@ export default function Header({ onOpenAuth, isLoggedIn, onLogout }) {
                 ) : (
                   <button
                     onClick={() => onOpenAuth()}
-                    className="flex items-center justify-center bg-[#E85D04] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#cc5203] transition-colors shadow-md whitespace-nowrap"
+                    className="flex items-center justify-center bg-[#0F3024] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#1a4a38] transition-colors shadow-md whitespace-nowrap"
                   >
                     Log In
                   </button>
