@@ -1,6 +1,6 @@
 // src/context/AdminContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -37,24 +37,15 @@ export function AdminProvider({ children }) {
                 if (snap.exists()) {
                     setAdminProfile({ uid: user.uid, email: user.email, ...snap.data() });
                 } else {
-                    // No adminUsers record — treat as legacy admin with full access
-                    setAdminProfile({
-                        uid: user.uid,
-                        email: user.email,
-                        role: 'super_admin',
-                        permissions: {
-                            orders: true,
-                            finance: true,
-                            walkins: true,
-                            reviews: true,
-                            settings: true,
-                        },
-                        receiveOrderEmails: true,
-                    });
+                    // Critical Security: If the adminUsers profile is missing or deleted, 
+                    // they immediately lose access. We force a sign-out.
+                    setAdminProfile(null);
+                    signOut(auth).catch(console.error);
                 }
                 setLoadingAdmin(false);
             }, (err) => {
                 console.error('AdminContext error:', err);
+                setAdminProfile(null);
                 setLoadingAdmin(false);
             });
         });
