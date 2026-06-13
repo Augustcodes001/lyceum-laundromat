@@ -8,6 +8,7 @@ import {
     query, 
     where, 
     addDoc, 
+    updateDoc,
     serverTimestamp 
 } from 'firebase/firestore';
 import { 
@@ -36,7 +37,10 @@ import {
     Users,
     Truck,
     Star,
-    LogOut
+    LogOut,
+    XCircle,
+    Clock,
+    Mail
 } from 'lucide-react';
 import ItemIcon from '../../components/ItemIcon';
 import { useAdmin } from '../../context/AdminContext';
@@ -69,7 +73,9 @@ const AdminSettings = () => {
         settings: false,
     });
     const [admins, setAdmins] = useState([]);
+    const [pendingInvites, setPendingInvites] = useState([]);
     const [inviting, setInviting] = useState(false);
+    const [revoking, setRevoking] = useState(null);
 
     useEffect(() => {
         // ── Fetch Global Config ──
@@ -129,9 +135,17 @@ const AdminSettings = () => {
             setAdmins(admList);
         });
 
+        // ── Fetch Pending Invites ──
+        const qInvites = query(collection(db, "adminInvites"), where("status", "==", "pending"));
+        const unsubscribeInvites = onSnapshot(qInvites, (snapshot) => {
+            const inviteList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setPendingInvites(inviteList);
+        });
+
         return () => {
             unsubscribeConfig();
             unsubscribeAdmins();
+            unsubscribeInvites();
         };
     }, []);
 
@@ -288,6 +302,26 @@ const AdminSettings = () => {
         } finally {
             setInviting(false);
             setTimeout(() => setMessage(null), 7000);
+        }
+    };
+
+    // ── Logic: Revoke Pending Invite ──
+    const handleRevokeInvite = async (inviteId, inviteEmail) => {
+        if (!window.confirm(`Revoke the invite sent to ${inviteEmail}? The link will stop working immediately.`)) return;
+        setRevoking(inviteId);
+        try {
+            await updateDoc(doc(db, 'adminInvites', inviteId), {
+                status: 'expired',
+                revokedBy: auth.currentUser.email,
+                revokedAt: serverTimestamp()
+            });
+            setMessage({ type: 'success', text: `Invite for ${inviteEmail} has been revoked.` });
+            setTimeout(() => setMessage(null), 5000);
+        } catch (err) {
+            console.error('Revoke error:', err);
+            setMessage({ type: 'error', text: 'Failed to revoke invite. Try again.' });
+        } finally {
+            setRevoking(null);
         }
     };
 
@@ -671,6 +705,61 @@ const AdminSettings = () => {
                                     </form>
 
                                     <div className="space-y-6">
+
+                                        {/* ── Pending Invites ── */}
+                                        {pendingInvites.length > 0 && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 px-1">
+                                                    <Clock className="w-4 h-4 text-amber-500" />
+                                                    <h3 className="text-sm font-black text-[#0F3024] uppercase tracking-widest">Pending Invitations</h3>
+                                                    <span className="ml-1 bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-widest">
+                                                        {pendingInvites.length} awaiting
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {pendingInvites.map((inv) => {
+                                                        // Safely compute expiry time label
+                                                        let expiryLabel = '48h window';
+                                                        try {
+                                                            const raw = inv.expiresAt;
+                                                            const exp = raw?.toDate ? raw.toDate() : raw?.seconds ? new Date(raw.seconds * 1000) : new Date(raw);
+                                                            if (!isNaN(exp?.getTime())) {
+                                                                const hrs = Math.max(0, Math.round((exp - new Date()) / 36e5));
+                                                                expiryLabel = hrs > 0 ? `Expires in ~${hrs}h` : 'Expiring soon';
+                                                            }
+                                                        } catch {}
+
+                                                        return (
+                                                            <div key={inv.id} className="flex items-center justify-between bg-amber-50/60 border border-amber-100 rounded-2xl px-5 py-4 gap-4">
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <div className="w-9 h-9 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-black text-sm shrink-0">
+                                                                        <Mail className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-sm font-black text-[#0F3024] truncate">{inv.email}</p>
+                                                                        <p className="text-[10px] text-amber-600 font-bold">{expiryLabel} · Invited by {inv.invitedBy?.split('@')[0]}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleRevokeInvite(inv.id, inv.email)}
+                                                                    disabled={revoking === inv.id}
+                                                                    title="Revoke this invite immediately"
+                                                                    className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                                                >
+                                                                    {revoking === inv.id
+                                                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                        : <XCircle className="w-3.5 h-3.5" />
+                                                                    }
+                                                                    Revoke
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* ── Active Admins ── */}
                                         <div className="flex items-center gap-3 px-1">
                                             <ShieldCheck className="w-5 h-5 text-gray-400" />
                                             <h3 className="text-sm font-black text-[#0F3024] uppercase tracking-widest">Active Administrators</h3>

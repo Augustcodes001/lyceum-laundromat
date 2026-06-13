@@ -36,10 +36,10 @@ export default function AdminAcceptInvite() {
 
         const fetchInvite = async () => {
             try {
+                // Single-field query — no composite index required
                 const q = query(
                     collection(db, 'adminInvites'),
-                    where('inviteToken', '==', token),
-                    where('status', '==', 'pending')
+                    where('inviteToken', '==', token)
                 );
                 const snap = await getDocs(q);
                 if (snap.empty) { setStatus('expired'); return; }
@@ -47,8 +47,8 @@ export default function AdminAcceptInvite() {
                 const inviteDoc = snap.docs[0];
                 const inviteData = inviteDoc.data();
 
-                // Guard: must have an email to proceed
-                if (!inviteData?.email) {
+                // Guard: check status in JS (avoids needing a composite Firestore index)
+                if (!inviteData?.email || inviteData.status !== 'pending') {
                     setStatus('expired');
                     return;
                 }
