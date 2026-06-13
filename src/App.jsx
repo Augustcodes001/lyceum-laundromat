@@ -38,6 +38,7 @@ import Sidebar from './components/Sidebar';
 // Admin Components
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import AdminLayout from './components/admin/AdminLayout';
+import { AdminProvider } from './context/AdminContext';
 
 function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
