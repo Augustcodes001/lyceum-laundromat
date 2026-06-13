@@ -450,16 +450,13 @@ export default function Cart() {
             // 🔥 TRIGGER RESEND + VERCEL EMAIL
             // We wrap this in a try/catch so if the email fails, it doesn't break the customer's order
             try {
-                await sendEmail({
-                    type: 'new_order',
-                    to: auth.currentUser.email || "hello@lyceum.com",
-                    payload: {
-                        customerName: auth.currentUser.displayName || 'Valued Customer',
-                        orderId: docRef.id,
-                        items: sanitizedCartItems,
-                        total: total,
-                        address: address
-                    }
+                await sendEmail('new_order', {
+                    customerName: auth.currentUser.displayName || 'Valued Customer',
+                    customerEmail: auth.currentUser.email || null,
+                    orderId: cleanPayload.trackingId || docRef.id,
+                    items: sanitizedCartItems,
+                    total: total,
+                    address: address
                 });
                 console.log("Vercel/Resend email triggered successfully!");
             } catch (emailError) {

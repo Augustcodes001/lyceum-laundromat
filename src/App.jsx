@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
-
+import { Analytics } from "@vercel/analytics/next"
 // Pages
 import Home from './pages/Home';
 import ServicesPricing from './pages/ServicesPricing';

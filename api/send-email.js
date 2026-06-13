@@ -4,10 +4,25 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'lyceumlaundromat@gmail.com';
-const FROM_EMAIL = 'Lyceum Laundromat <onboarding@resend.dev>';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'uwumiromoses@gmail.com';
+
+// ✅ Once your domain is verified in Resend, update this to:
+// 'Lyceum Laundromat <noreply@yourdomain.com>'
+// Until then, we use Resend's test domain (only works for verified recipient emails during testing)
+const FROM_DOMAIN = process.env.FROM_EMAIL_DOMAIN || 'noreply@lyceumlaundromat.com.ng';
+const FROM_EMAIL = `Lyceum Laundromat <${FROM_DOMAIN}>`;
 
 export default async function handler(req, res) {
+  // ── CORS Headers (allows browser fetch() to call this function) ──
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -29,85 +44,92 @@ export default async function handler(req, res) {
       case 'new_order': {
         const { customerName, customerEmail, orderId, items, total, address } = payload;
 
-        const itemRows = items.map(item =>
+        const safeItems = Array.isArray(items) ? items : [];
+        const itemRows = safeItems.map(item =>
           `<tr>
-            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${item.name}</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${item.service}</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:center;">${item.qty}</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:#E85D04;">₦${(item.price * item.qty).toLocaleString()}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${item.name || 'Item'}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">${item.service || '-'}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:center;">${item.qty || 1}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:#E85D04;">₦${((item.price || 0) * (item.qty || 1)).toLocaleString()}</td>
           </tr>`
         ).join('');
 
-        // Admin notification
+        const adminEmailHtml = `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;">
+              <h1 style="color:white;margin:0;font-size:24px;">🧺 New Order Received!</h1>
+              <p style="color:#E85D04;margin:4px 0 0;font-size:14px;">Order #${orderId}</p>
+            </div>
+            <div style="background:#f9f9f9;padding:24px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+              <p><strong>Customer:</strong> ${customerName}</p>
+              ${customerEmail ? `<p><strong>Email:</strong> ${customerEmail}</p>` : ''}
+              <p><strong>Pickup Address:</strong> ${address || 'Not specified'}</p>
+              <table style="width:100%;border-collapse:collapse;margin-top:16px;background:white;border-radius:8px;overflow:hidden;">
+                <thead>
+                  <tr style="background:#0F3024;color:white;">
+                    <th style="padding:10px 12px;text-align:left;">Item</th>
+                    <th style="padding:10px 12px;text-align:left;">Service</th>
+                    <th style="padding:10px 12px;text-align:center;">Qty</th>
+                    <th style="padding:10px 12px;text-align:right;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>${itemRows}</tbody>
+              </table>
+              <div style="margin-top:16px;text-align:right;font-size:20px;font-weight:bold;color:#0F3024;">
+                Total: <span style="color:#E85D04;">₦${(total || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Admin notification (always send this)
         await resend.emails.send({
           from: FROM_EMAIL,
           to: ADMIN_EMAIL,
           subject: `🧺 New Order #${orderId} from ${customerName}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;">
-                <h1 style="color:white;margin:0;font-size:24px;">New Order Received!</h1>
-                <p style="color:#E85D04;margin:4px 0 0;font-size:14px;">Order #${orderId}</p>
-              </div>
-              <div style="background:#f9f9f9;padding:24px;border:1px solid #eee;">
-                <p><strong>Customer:</strong> ${customerName}</p>
-                <p><strong>Email:</strong> ${customerEmail}</p>
-                <p><strong>Pickup Address:</strong> ${address}</p>
-                <table style="width:100%;border-collapse:collapse;margin-top:16px;background:white;border-radius:8px;overflow:hidden;">
-                  <thead>
-                    <tr style="background:#0F3024;color:white;">
-                      <th style="padding:10px 12px;text-align:left;">Item</th>
-                      <th style="padding:10px 12px;text-align:left;">Service</th>
-                      <th style="padding:10px 12px;text-align:center;">Qty</th>
-                      <th style="padding:10px 12px;text-align:right;">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>${itemRows}</tbody>
-                </table>
-                <div style="margin-top:16px;text-align:right;font-size:20px;font-weight:bold;color:#0F3024;">
-                  Total: <span style="color:#E85D04;">₦${total.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          `
+          html: adminEmailHtml,
         });
 
-        // Customer receipt  
-        emailData = await resend.emails.send({
-          from: FROM_EMAIL,
-          to: customerEmail,
-          subject: `✅ Your Lyceum Order is Confirmed! (#${orderId})`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-                <h1 style="color:white;margin:0;font-size:28px;">Order Confirmed! 🧺</h1>
-                <p style="color:#E85D04;margin:8px 0 0;">Order #${orderId}</p>
-              </div>
-              <div style="background:#f9f9f9;padding:24px;border:1px solid #eee;border-radius:0 0 12px 12px;">
-                <p style="font-size:16px;">Hi <strong>${customerName}</strong>,</p>
-                <p>Thank you for choosing Lyceum Laundromat! Your order has been received and we'll be in touch shortly to confirm your pickup.</p>
-                <table style="width:100%;border-collapse:collapse;margin-top:16px;background:white;border-radius:8px;overflow:hidden;">
-                  <thead>
-                    <tr style="background:#0F3024;color:white;">
-                      <th style="padding:10px 12px;text-align:left;">Item</th>
-                      <th style="padding:10px 12px;text-align:left;">Service</th>
-                      <th style="padding:10px 12px;text-align:center;">Qty</th>
-                      <th style="padding:10px 12px;text-align:right;">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody>${itemRows}</tbody>
-                </table>
-                <div style="margin-top:16px;text-align:right;font-size:20px;font-weight:bold;">
-                  Total: <span style="color:#E85D04;">₦${total.toLocaleString()}</span>
+        // Customer receipt (only if we have their email)
+        if (customerEmail) {
+          emailData = await resend.emails.send({
+            from: FROM_EMAIL,
+            to: customerEmail,
+            subject: `✅ Your Lyceum Order is Confirmed! (#${orderId})`,
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+                <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                  <h1 style="color:white;margin:0;font-size:28px;">Order Confirmed! 🧺</h1>
+                  <p style="color:#E85D04;margin:8px 0 0;">Order #${orderId}</p>
                 </div>
-                <div style="margin-top:24px;padding:16px;background:#E85D04;border-radius:8px;text-align:center;">
-                  <p style="color:white;margin:0;font-weight:bold;">Pickup Address: ${address}</p>
+                <div style="background:#f9f9f9;padding:24px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                  <p style="font-size:16px;">Hi <strong>${customerName}</strong>,</p>
+                  <p>Thank you for choosing Lyceum Laundromat! Your order has been received and we'll be in touch shortly to confirm your pickup.</p>
+                  <table style="width:100%;border-collapse:collapse;margin-top:16px;background:white;border-radius:8px;overflow:hidden;">
+                    <thead>
+                      <tr style="background:#0F3024;color:white;">
+                        <th style="padding:10px 12px;text-align:left;">Item</th>
+                        <th style="padding:10px 12px;text-align:left;">Service</th>
+                        <th style="padding:10px 12px;text-align:center;">Qty</th>
+                        <th style="padding:10px 12px;text-align:right;">Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>${itemRows}</tbody>
+                  </table>
+                  <div style="margin-top:16px;text-align:right;font-size:20px;font-weight:bold;">
+                    Total: <span style="color:#E85D04;">₦${(total || 0).toLocaleString()}</span>
+                  </div>
+                  <div style="margin-top:24px;padding:16px;background:#E85D04;border-radius:8px;text-align:center;">
+                    <p style="color:white;margin:0;font-weight:bold;">📍 Pickup Address: ${address || 'Confirmed at booking'}</p>
+                  </div>
+                  <p style="color:#666;font-size:13px;margin-top:24px;">Questions? Reply to this email or WhatsApp us at +234 708 500 4780</p>
                 </div>
-                <p style="color:#666;font-size:13px;margin-top:24px;">Questions? Reply to this email or WhatsApp us at +234 708 500 4780</p>
               </div>
-            </div>
-          `
-        });
+            `
+          });
+        } else {
+          emailData = { message: 'Admin notified; no customer email provided.' };
+        }
         break;
       }
 
