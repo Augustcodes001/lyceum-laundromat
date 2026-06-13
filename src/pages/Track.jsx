@@ -42,14 +42,16 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
         return saved ? JSON.parse(saved) : [];
     });
 
-    // ── Auto-track when URL has an id ──
     useEffect(() => {
-        if (urlId) startLiveTracking(urlId.toUpperCase());
+        if (urlId) startLiveTracking(urlId);
         return () => { if (unsubRef.current) unsubRef.current(); };
     }, [urlId]);
 
-    const startLiveTracking = (id) => {
-        if (!id.trim()) return;
+    const startLiveTracking = (rawId) => {
+        if (!rawId.trim()) return;
+
+        // Preserve case-sensitivity for doc IDs, but format legacy LY-ABCD codes
+        const id = rawId.includes('-') ? rawId.trim().toUpperCase() : rawId.trim();
 
         // Tear down previous listener
         if (unsubRef.current) {
@@ -126,7 +128,7 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
 
     const handleTrackSubmit = (e) => {
         e.preventDefault();
-        const id = trackingId.trim().toUpperCase();
+        const id = trackingId.trim();
         if (!id) return;
         if (urlId === id) {
             startLiveTracking(id);
