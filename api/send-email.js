@@ -133,10 +133,12 @@ export default async function handler(req, res) {
         break;
       }
 
-      // 2. Support Ticket — sent to admin
+      // 2. Support Ticket — sent to admin & customer acknowledgment
       case 'support_ticket': {
         const { senderEmail, message } = payload;
-        emailData = await resend.emails.send({
+        
+        // 1. Notify admin
+        await resend.emails.send({
           from: FROM_EMAIL,
           to: ADMIN_EMAIL,
           replyTo: senderEmail,
@@ -156,13 +158,45 @@ export default async function handler(req, res) {
             </div>
           `
         });
+
+        // 2. Acknowledgment email to customer
+        emailData = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: senderEmail,
+          subject: `We've received your message! 💬`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:24px;">Message Received!</h1>
+              </div>
+              <div style="background:#f9f9f9;padding:28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                <p style="font-size:16px;">Hi there,</p>
+                <p style="font-size:15px;color:#444;line-height:1.5;">
+                  This is an automated confirmation that we've successfully received your support message! 
+                </p>
+                <div style="background:white;padding:16px;border-radius:8px;border-left:4px solid #E85D04;margin:16px 0;">
+                  <p style="margin:0;font-style:italic;color:#666;">"${message}"</p>
+                </div>
+                <p style="font-size:15px;color:#444;line-height:1.5;">
+                  Our team is looking into it and will get back to you with further updates as soon as possible (usually within a few hours). 
+                  Thank you for your patience!
+                </p>
+                <p style="color:#999;font-size:12px;margin-top:24px;text-align:center;">
+                  Lyceum Laundromat Support Team
+                </p>
+              </div>
+            </div>
+          `
+        });
         break;
       }
 
-      // 3. Newsletter subscriber — sent to admin
+      // 3. Newsletter subscriber — sent to admin & customer
       case 'newsletter': {
         const { subscriberEmail } = payload;
-        emailData = await resend.emails.send({
+        
+        // 1. Notify admin
+        await resend.emails.send({
           from: FROM_EMAIL,
           to: ADMIN_EMAIL,
           subject: `📧 New Newsletter Subscriber: ${subscriberEmail}`,
@@ -171,6 +205,35 @@ export default async function handler(req, res) {
               <h2 style="color:#0F3024;">New Newsletter Subscriber!</h2>
               <p style="font-size:18px;font-weight:bold;color:#E85D04;">${subscriberEmail}</p>
               <p style="color:#666;">has subscribed to the Lyceum Laundromat newsletter.</p>
+            </div>
+          `
+        });
+
+        // 2. Welcome email to customer
+        emailData = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: subscriberEmail,
+          subject: `Welcome to Lyceum Laundromat! 🎉`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:26px;">You're on the list! ✨</h1>
+              </div>
+              <div style="background:#f9f9f9;padding:28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                <p style="font-size:16px;">Hi there,</p>
+                <p style="font-size:15px;color:#444;line-height:1.6;">
+                  Thank you for subscribing to the <strong>Lyceum Laundromat</strong> newsletter!
+                </p>
+                <p style="font-size:15px;color:#444;line-height:1.6;">
+                  You're officially on the list to receive our latest updates, exclusive discounts, and professional laundry tips right here in your inbox.
+                </p>
+                <div style="margin-top:24px;text-align:center;">
+                  <a href="${process.env.VITE_APP_URL || 'https://lyceumlaundromat.com.ng'}" style="background:#E85D04;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Visit Our Website</a>
+                </div>
+                <p style="color:#999;font-size:12px;margin-top:32px;text-align:center;">
+                  If you have any questions, feel free to WhatsApp us at +234 708 500 4780.
+                </p>
+              </div>
             </div>
           `
         });
