@@ -5,7 +5,7 @@ import {
     collection, query, where, getDocs,
     doc, setDoc, updateDoc, serverTimestamp
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff, Lock, User } from 'lucide-react';
 
@@ -92,11 +92,24 @@ export default function AdminAcceptInvite() {
         setErrorMsg('');
 
         try {
-            // 1. Create Firebase user
-            const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
-            const uid = cred.user.uid;
+            let uid;
 
-            // 2. Write admin profile to /adminUsers
+            try {
+                // Path A: Brand new account (fresh email)
+                const cred = await createUserWithEmailAndPassword(auth, invite.email, password);
+                uid = cred.user.uid;
+            } catch (createErr) {
+                if (createErr.code === 'auth/email-already-in-use') {
+                    // Path B: Email already exists (e.g., existing customer account)
+                    // Sign them in with the password they provided
+                    const cred = await signInWithEmailAndPassword(auth, invite.email, password);
+                    uid = cred.user.uid;
+                } else {
+                    throw createErr; // Rethrow any other auth errors
+                }
+            }
+
+            // Write / overwrite admin profile to /adminUsers
             await setDoc(doc(db, 'adminUsers', uid), {
                 uid,
                 email: invite.email,
@@ -111,7 +124,7 @@ export default function AdminAcceptInvite() {
                 status: 'active',
             });
 
-            // 3. Mark invite as accepted
+            // Mark invite as accepted
             await updateDoc(doc(db, 'adminInvites', inviteDocId), {
                 status: 'accepted',
                 acceptedAt: serverTimestamp(),
@@ -121,8 +134,10 @@ export default function AdminAcceptInvite() {
             setStatus('success');
         } catch (err) {
             console.error(err);
-            if (err.code === 'auth/email-already-in-use') {
-                setErrorMsg('This email already has an account. Please log in directly.');
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setErrorMsg('This email already has an account. The password you entered is incorrect — please use your existing Lyceum password.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setErrorMsg('Too many attempts. Please wait a moment and try again.');
             } else {
                 setErrorMsg(err.message || 'Something went wrong. Please try again.');
             }
@@ -242,7 +257,7 @@ export default function AdminAcceptInvite() {
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Create Password</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Set Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
                                 <input
@@ -257,6 +272,7 @@ export default function AdminAcceptInvite() {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-gray-400 mt-2 ml-1 font-medium">Already have a Lyceum account? Enter your existing password.</p>
                         </div>
 
                         <button
