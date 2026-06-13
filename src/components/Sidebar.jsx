@@ -16,8 +16,9 @@ export default function Sidebar({ onPromptLogout }) {
         <div className="hidden lg:flex flex-col w-64 bg-[#0F3024] shadow-2xl min-h-screen fixed left-0 top-0 bottom-0 z-40">
 
             {/* Sidebar Header / Logo */}
-            <div className="p-8 flex items-center justify-center border-b border-white/10">
-                <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-32 h-auto rounded-full" />
+            <div className="p-8 flex items-center gap-3 border-b border-white/5">
+                <img src="/Lyceum-official-logo-white-bg.png" alt="Lyceum" className="w-10 h-10 rounded-full" />
+                <span className="text-white font-black text-xl tracking-tighter uppercase">Lyceum</span>
             </div>
 
             {/* Navigation Links */}
@@ -28,12 +29,12 @@ export default function Sidebar({ onPromptLogout }) {
                         <Link
                             key={item.name}
                             to={item.path}
-                            className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-white/10 text-white font-bold border-l-4 border-[#E85D04]'
-                                : 'text-white/60 hover:bg-white/5 hover:text-white font-medium border-l-4 border-transparent'
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
+                                ? 'bg-[#E85D04] text-white shadow-lg shadow-orange-900/20 font-semibold'
+                                : 'text-emerald-100/60 hover:bg-white/5 hover:text-white font-semibold'
                                 }`}
                         >
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isActive ? 2.5 : 2}>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isActive ? 2.5 : 2}>
                                 {item.icon}
                             </svg>
                             {item.name}
@@ -43,12 +44,12 @@ export default function Sidebar({ onPromptLogout }) {
             </div>
 
             {/* Logout Button */}
-            <div className="p-4 border-t border-white/10">
+            <div className="p-4 border-t border-white/5">
                 <button
                     onClick={onPromptLogout}
-                    className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl text-white/60 hover:bg-white/5 hover:text-white font-medium transition-all"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all duration-300 font-semibold"
                 >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Log Out

@@ -14,9 +14,11 @@ import {
 import { signOut } from 'firebase/auth';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
+    const { can } = useAdmin();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = async () => {
@@ -52,14 +54,16 @@ const AdminLayout = () => {
         return () => unsubscribe();
     }, []);
 
-    const navLinks = [
+    const rawNavLinks = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
-        { name: 'Walk-ins', path: '/admin/walkins', icon: UserPlus },
-        { name: 'Finance', path: '/admin/finance', icon: Wallet },
-        { name: 'Feedback', path: '/admin/reviews', icon: Star },
-        { name: 'Settings', path: '/admin/settings', icon: Settings },
+        { name: 'Orders', path: '/admin/orders', icon: ShoppingBag, perm: 'orders' },
+        { name: 'Walk-ins', path: '/admin/walk-in', icon: UserPlus, perm: 'walkins' },
+        { name: 'Finance', path: '/admin/finance', icon: Wallet, perm: 'finance' },
+        { name: 'Feedback', path: '/admin/reviews', icon: Star, perm: 'reviews' },
+        { name: 'Settings', path: '/admin/settings', icon: Settings, perm: 'settings' },
     ];
+
+    const navLinks = rawNavLinks.filter(link => !link.perm || can(link.perm));
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">

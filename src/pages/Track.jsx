@@ -24,6 +24,20 @@ const STEPS = [
 
 const STEP_LABELS = STEPS.map(s => s.label);
 
+// Normalize Firestore status strings to canonical STEP_LABELS
+const normalizeStatus = (status = '') => {
+    const s = status.toLowerCase().trim();
+    if (s.includes('place') || s === 'order placed' || s === 'pending') return 'Placed';
+    if (s.includes('pick')) return 'Pickup';
+    if (s.includes('wash') || s.includes('iron')) return 'Washing/Ironing';
+    if (s === 'delivery' || s.includes('out for delivery') || s.includes('delivering')) return 'Delivery';
+    if (s.includes('complet') || s === 'delivered' || s.includes('done')) return 'Completed';
+    // Try exact match last
+    const exact = STEP_LABELS.find(l => l.toLowerCase() === s);
+    return exact || null;
+};
+
+
 export default function Track({ isLoggedIn, onOpenAuth }) {
     const navigate = useNavigate();
     const { id: urlId } = useParams();
@@ -143,11 +157,13 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
     };
 
     const progressWidth = () => {
-        const idx = STEP_LABELS.indexOf(order?.status);
+        const normalized = normalizeStatus(order?.status);
+        const idx = STEP_LABELS.indexOf(normalized);
         if (idx < 0) return '0%';
         const pct = (idx / (STEPS.length - 1)) * 100;
         return `${pct}%`;
     };
+
 
     return (
         <div className="bg-gray-50/50 min-h-screen pb-28 font-sans">
@@ -239,7 +255,7 @@ export default function Track({ isLoggedIn, onOpenAuth }) {
                                 
                                 {STEPS.map((step, i) => {
                                     const StatusIcon = step.icon;
-                                    const currentIdx = STEP_LABELS.indexOf(order.status);
+                                    const currentIdx = STEP_LABELS.indexOf(normalizeStatus(order.status));
                                     const isPast   = currentIdx >= i;
                                     const isActive = currentIdx === i;
                                     return (

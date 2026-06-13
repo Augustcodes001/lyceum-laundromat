@@ -84,9 +84,10 @@ export default async function handler(req, res) {
         `;
 
         // Admin notification (always send this)
+        const targetAdmins = (payload.adminEmails && payload.adminEmails.length > 0) ? payload.adminEmails : ADMIN_EMAILS;
         await resend.emails.send({
           from: FROM_EMAIL,
-          to: ADMIN_EMAILS,
+          to: targetAdmins,
           subject: `🧺 New Order #${orderId} from ${customerName}`,
           html: adminEmailHtml,
         });
@@ -301,6 +302,40 @@ export default async function handler(req, res) {
                   Track your order in real time at <a href="${process.env.VITE_APP_URL || 'https://lyceum.vercel.app'}/track/${orderId}" style="color:#E85D04;">Lyceum Tracking</a>
                 </p>
                 <p style="color:#999;font-size:12px;margin-top:16px;">Questions? WhatsApp us at +234 708 500 4780</p>
+              </div>
+            </div>
+          `
+        });
+        break;
+      }
+
+      // 6. Admin Invitation — sent to new prospective team member
+      case 'admin_invite': {
+        const { email, role, invitedBy, token, permissions } = payload;
+        
+        const acceptUrl = `${process.env.VITE_APP_URL || 'https://lyceumlaundromat.com.ng'}/admin/accept-invite?token=${token}`;
+        
+        emailData = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject: `🔐 You've been invited to join Lyceum Admin`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:#0F3024;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:26px;">Lyceum Admin Invite</h1>
+                <p style="color:#E85D04;margin:6px 0 0;font-size:14px;">Secure Access Portal</p>
+              </div>
+              <div style="background:#f9f9f9;padding:28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
+                <p style="font-size:16px;">Hello,</p>
+                <div style="background:white;padding:20px;border-radius:12px;border:1px solid #eee;margin:20px 0;">
+                  <p style="margin:0 0 8px;"><strong>${invitedBy}</strong> has invited you to join the Lyceum Laundromat Admin Portal.</p>
+                  <p style="margin:0;color:#666;">Role: <strong>${role}</strong></p>
+                </div>
+                <p style="color:#444;font-size:15px;margin-bottom:24px;">Click the secure link below to accept your invitation and set up your password. This link will expire in 48 hours.</p>
+                <div style="text-align:center;">
+                  <a href="${acceptUrl}" style="background:#E85D04;color:white;padding:16px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;">Accept Invitation</a>
+                </div>
+                <p style="color:#999;font-size:12px;margin-top:32px;text-align:center;">If you did not expect this invitation, you can safely ignore this email.</p>
               </div>
             </div>
           `

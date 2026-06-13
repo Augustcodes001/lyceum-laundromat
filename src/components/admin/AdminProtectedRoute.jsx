@@ -1,35 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminProtectedRoute = () => {
-    const [status, setStatus] = useState('loading'); // 'loading', 'authorized', 'unauthorized'
+    const { adminProfile, loadingAdmin } = useAdmin();
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    if (userDoc.exists() && userDoc.data().role === 'admin') {
-                        setStatus('authorized');
-                    } else {
-                        setStatus('unauthorized');
-                    }
-                } catch (error) {
-                    console.error("Error checking admin role:", error);
-                    setStatus('unauthorized');
-                }
-            } else {
-                setStatus('unauthorized');
-            }
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    if (status === 'loading') {
+    if (loadingAdmin) {
         return (
             <div className="min-h-screen bg-[#0F3024] flex flex-col items-center justify-center p-6 text-center">
                 <img 
@@ -43,7 +18,7 @@ const AdminProtectedRoute = () => {
         );
     }
 
-    if (status === 'unauthorized') {
+    if (!adminProfile) {
         return <Navigate to="/admin/login" replace />;
     }
 

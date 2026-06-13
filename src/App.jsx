@@ -26,6 +26,7 @@ import AdminWalkInPOS from './pages/admin/AdminWalkInPOS';
 import AdminFinance from './pages/admin/AdminFinance';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReviews from './pages/admin/AdminReviews';
+import AdminAcceptInvite from './pages/admin/AdminAcceptInvite';
 
 // Components
 import Header from './components/Header';
@@ -176,16 +177,19 @@ function AppContent() {
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/community" element={<Reviews />} />
 
-          {/* 🔐 Admin Portal Routes */}
+          {/* ── UNPROTECTED ADMIN ROUTES ── */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminProtectedRoute />}>
+          <Route path="/admin/accept-invite" element={<AdminAcceptInvite />} />
+
+          {/* ── PROTECTED ADMIN ROUTES ── */}
+          <Route element={<AdminProvider><AdminProtectedRoute /></AdminProvider>}>
             <Route element={<AdminLayout />}>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="walkins" element={<AdminWalkInPOS />} />
-              <Route path="finance" element={<AdminFinance />} />
-              <Route path="reviews" element={<AdminReviews />} />
-              <Route path="settings" element={<AdminSettings />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/admin/walk-in" element={<AdminWalkInPOS />} />
+              <Route path="/admin/finance" element={<AdminFinance />} />
+              <Route path="/admin/reviews" element={<AdminReviews />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
           </Route>
         </Routes>

@@ -34,12 +34,16 @@ import {
     ChevronRight,
     KeyRound,
     Users,
-    Truck
+    Truck,
+    Star,
+    LogOut
 } from 'lucide-react';
 import ItemIcon from '../../components/ItemIcon';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminSettings = () => {
     // ── Global State ──
+    const { isSuperAdmin } = useAdmin();
     const [activeTab, setActiveTab] = useState('shop'); // 'shop', 'security', 'team'
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -55,6 +59,15 @@ const AdminSettings = () => {
 
     // ── Team Tab State ──
     const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState('admin');
+    const [receiveOrderEmails, setReceiveOrderEmails] = useState(false);
+    const [invitePermissions, setInvitePermissions] = useState({
+        orders: true,
+        finance: false,
+        walkins: true,
+        reviews: false,
+        settings: false,
+    });
     const [admins, setAdmins] = useState([]);
     const [inviting, setInviting] = useState(false);
 
@@ -110,7 +123,7 @@ const AdminSettings = () => {
         });
 
         // ── Fetch Current Admins ──
-        const qAdm = query(collection(db, "users"), where("role", "==", "admin"));
+        const qAdm = query(collection(db, "adminUsers"));
         const unsubscribeAdmins = onSnapshot(qAdm, (snapshot) => {
             const admList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setAdmins(admList);
@@ -213,14 +226,44 @@ const AdminSettings = () => {
 
         setInviting(true);
         try {
-            await addDoc(collection(db, "pending_admins"), {
+            const token = crypto.randomUUID 
+                ? crypto.randomUUID() 
+                : Math.random().toString(36).substring(2) + Date.now().toString(36);
+            
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 48);
+
+            await addDoc(collection(db, "adminInvites"), {
                 email: inviteEmail.toLowerCase(),
+                role: inviteRole,
+                permissions: invitePermissions,
+                receiveOrderEmails,
                 invitedBy: auth.currentUser.email,
-                invitedAt: serverTimestamp(),
-                status: 'pending'
+                inviteToken: token,
+                status: 'pending',
+                expiresAt
             });
+
+            // Trigger Email to Invitee
+            await fetch(`${import.meta.env.VITE_APP_URL || 'https://lyceumlaundromat.com.ng'}/api/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'admin_invite',
+                    payload: {
+                        email: inviteEmail.toLowerCase(),
+                        role: inviteRole,
+                        invitedBy: auth.currentUser.email,
+                        token,
+                        permissions: invitePermissions
+                    }
+                })
+            });
+
             setMessage({ type: 'success', text: `Invitation sent to ${inviteEmail}!` });
             setInviteEmail('');
+            setInvitePermissions({ orders: true, finance: false, walkins: true, reviews: false, settings: false });
+            setReceiveOrderEmails(false);
         } catch (err) {
             console.error("Invite Error:", err);
             setMessage({ type: 'error', text: 'Failed to send invitation.' });
@@ -519,63 +562,151 @@ const AdminSettings = () => {
                     {/* 👥 TAB: TEAM */}
                     {activeTab === 'team' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100">
-                                <div className="flex items-center gap-3 mb-10">
-                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                                        <UserPlus className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-black text-[#0F3024]">Team Management</h2>
-                                        <p className="text-gray-400 text-sm font-medium">Invite trusted colleagues to the admin portal.</p>
-                                    </div>
+                            {!isSuperAdmin ? (
+                                <div className="bg-red-50 p-10 rounded-[40px] text-center border border-red-100 flex flex-col items-center">
+                                    <ShieldCheck className="w-16 h-16 text-red-400 mb-4" />
+                                    <h2 className="text-2xl font-black text-red-900 mb-2">Access Denied</h2>
+                                    <p className="text-red-700/80 font-medium max-w-md">You do not have permission to manage the team. Only Super Admins can issue invitations and modify access levels.</p>
                                 </div>
-
-                                <form onSubmit={handleInviteAdmin} className="flex flex-col sm:flex-row gap-4 mb-12">
-                                    <div className="flex-1">
-                                        <input 
-                                            type="email" 
-                                            required
-                                            value={inviteEmail}
-                                            onChange={(e) => setInviteEmail(e.target.value)}
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-[#0F3024]/10 transition-all outline-none"
-                                            placeholder="colleague@lyceum.com"
-                                        />
+                            ) : (
+                                <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100">
+                                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                                                <UserPlus className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-black text-[#0F3024]">Add Team Member</h2>
+                                                <p className="text-gray-400 text-sm font-medium">Configure access and invite colleagues.</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button 
-                                        type="submit"
-                                        disabled={inviting}
-                                        className="bg-[#E85D04] text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-[#E85D04]/20 hover:bg-[#cc5203] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {inviting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                                        Send Invite
-                                    </button>
-                                </form>
 
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">Active Administrators</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {admins.map((adm) => (
-                                            <div key={adm.id} className="bg-gray-50/50 p-6 rounded-[24px] border border-gray-50 flex items-center justify-between group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                                                        <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-black text-xs">
-                                                            {adm.email?.charAt(0).toUpperCase()}
+                                    <form onSubmit={handleInviteAdmin} className="space-y-8 bg-gray-50/50 p-6 md:p-8 rounded-[32px] border border-gray-100 mb-12">
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            <div className="flex-1 space-y-2">
+                                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Email Address</label>
+                                                <input 
+                                                    type="email" 
+                                                    required
+                                                    value={inviteEmail}
+                                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                                    className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-[#E85D04] transition-all outline-none text-[#0F3024]"
+                                                    placeholder="colleague@lyceum.com"
+                                                />
+                                            </div>
+                                            <div className="md:w-1/3 space-y-2">
+                                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Assign Role</label>
+                                                <select
+                                                    value={inviteRole}
+                                                    onChange={(e) => setInviteRole(e.target.value)}
+                                                    className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-[#E85D04] transition-all outline-none text-[#0F3024] cursor-pointer"
+                                                >
+                                                    <option value="admin">Administrator</option>
+                                                </select>
+                                                <p className="text-[10px] text-gray-400 px-1 font-medium mt-1">Super Admin assignment is disabled.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t border-gray-200/60">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Specific Permissions</label>
+                                                
+                                                <label className="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 cursor-pointer hover:border-[#E85D04] transition-colors">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={receiveOrderEmails}
+                                                        onChange={(e) => setReceiveOrderEmails(e.target.checked)}
+                                                        className="w-5 h-5 rounded border-gray-300 text-[#E85D04] focus:ring-[#E85D04]" 
+                                                    />
+                                                    <span className="text-sm font-bold text-[#0F3024]">Receive New Order Emails</span>
+                                                </label>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                                {Object.keys(invitePermissions).map(key => (
+                                                    <label key={key} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${invitePermissions[key] ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={invitePermissions[key]}
+                                                            onChange={(e) => setInvitePermissions({...invitePermissions, [key]: e.target.checked})}
+                                                            className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" 
+                                                        />
+                                                        <span className={`text-xs font-black uppercase tracking-wider ${invitePermissions[key] ? 'text-emerald-700' : 'text-gray-500'}`}>
+                                                            {key}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex justify-end">
+                                            <button 
+                                                type="submit"
+                                                disabled={inviting || !inviteEmail}
+                                                className="bg-[#E85D04] text-white px-10 py-4 rounded-2xl font-black shadow-xl shadow-[#E85D04]/20 hover:bg-[#cc5203] hover:-translate-y-1 transition-all disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                                            >
+                                                {inviting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                                                Send Professional Invite
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3 px-1">
+                                            <ShieldCheck className="w-5 h-5 text-gray-400" />
+                                            <h3 className="text-sm font-black text-[#0F3024] uppercase tracking-widest">Active Administrators</h3>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {admins.map((adm) => (
+                                                <div key={adm.id} className={`p-6 rounded-[24px] border border-gray-100 flex flex-col gap-4 relative overflow-hidden group transition-all ${adm.role === 'super_admin' ? 'bg-[#0F3024] text-white shadow-xl' : 'bg-white hover:border-[#E85D04]/30 shadow-sm'}`}>
+                                                    
+                                                    {adm.role === 'super_admin' && (
+                                                        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+                                                    )}
+
+                                                    <div className="flex items-start justify-between relative z-10">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-sm shadow-sm ${adm.role === 'super_admin' ? 'bg-white/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                                                {adm.name?.charAt(0).toUpperCase() || adm.email?.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <p className={`text-sm font-black flex items-center gap-2 ${adm.role === 'super_admin' ? 'text-white' : 'text-[#0F3024]'}`}>
+                                                                    {adm.name || 'Admin User'}
+                                                                    {adm.role === 'super_admin' && <Star className="w-3 h-3 text-emerald-400" fill="currentColor" />}
+                                                                </p>
+                                                                <p className={`text-[10px] font-bold mt-0.5 ${adm.role === 'super_admin' ? 'text-white/60' : 'text-gray-400'}`}>
+                                                                    {adm.email}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${adm.role === 'super_admin' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                                            {adm.role === 'super_admin' ? 'Super Admin' : 'Admin'}
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-[#0F3024]">{adm.name || 'Admin User'}</p>
-                                                        <p className="text-[10px] font-bold text-gray-400">{adm.email}</p>
-                                                    </div>
+
+                                                    {/* Role Chips */}
+                                                    {adm.role !== 'super_admin' && adm.permissions && (
+                                                        <div className="flex flex-wrap gap-1.5 pt-4 border-t border-gray-100 mt-2">
+                                                            {Object.entries(adm.permissions).filter(([, val]) => val).map(([k]) => (
+                                                                <span key={k} className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100 text-[8px] font-black uppercase tracking-widest">
+                                                                    {k}
+                                                                </span>
+                                                            ))}
+                                                            {adm.receiveOrderEmails && (
+                                                                <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded border border-orange-100 text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                                    <LogOut className="w-2 h-2 rotate-180" /> Emails
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
-                                                    <UserCheck className="w-3 h-3" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Active</span>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
 
