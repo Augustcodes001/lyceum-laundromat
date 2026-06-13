@@ -1,6 +1,6 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import { Analytics } from "@vercel/analytics/react";
@@ -183,6 +183,7 @@ function AppContent() {
           <Route path="/admin/accept-invite" element={<AdminAcceptInvite />} />
 
           {/* ── PROTECTED ADMIN ROUTES ── */}
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route element={<AdminProvider><AdminProtectedRoute /></AdminProvider>}>
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
